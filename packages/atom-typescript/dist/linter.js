@@ -1,10 +1,10 @@
-// This file is only called from linter
-// See : https://github.com/AtomLinter/Linter/issues/337
-var parent = require('./worker/parent');
-var fs = require('fs');
+"use strict";
+var parent = require("./worker/parent");
+var fs = require("fs");
 var atom_1 = require("atom");
 exports.provider = {
-    grammarScopes: ['source.ts', 'source.ts.tsx'],
+    name: 'TS',
+    grammarScopes: ['source.ts', 'source.tsx'],
     scope: 'file',
     lintOnFly: true,
     lint: function (textEditor) {
@@ -18,7 +18,7 @@ exports.provider = {
             var linterErrors = resp.errors.map(function (err) { return ({
                 type: "Error",
                 filePath: filePath,
-                html: "<span class=\"badge badge-flexible\" style=\"color:rgb(0, 148, 255)\"> TS </span> " + err.message,
+                text: err.message,
                 range: new atom_1.Range([err.startPos.line, err.startPos.col], [err.endPos.line, err.endPos.col]),
             }); });
             return linterErrors;

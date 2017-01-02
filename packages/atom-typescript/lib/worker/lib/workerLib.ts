@@ -42,8 +42,6 @@ class RequesterResponder {
     protected getProcess: {
         (): { send?: <T>(message: Message<T>) => any }
     }
-    = () => { throw new Error('getProcess is abstract'); return null; }
-
 
     ///////////////////////////////// REQUESTOR /////////////////////////
 
@@ -61,7 +59,7 @@ class RequesterResponder {
     protected processResponse(m: any) {
         var parsed: Message<any> = m;
 
-        this.pendingRequests.pop();
+        this.pendingRequests.shift();
         this.pendingRequestsChanged(this.pendingRequests);
 
         if (!parsed.message || !parsed.id) {
@@ -104,14 +102,15 @@ class RequesterResponder {
 
         // Create an id unique to this call and store the defered against it
         var id = createId();
-        var defer = Promise.defer<any>();
-        this.currentListeners[message][id] = defer;
+        const promise = new Promise((resolve,reject)=>{
+            this.currentListeners[message][id] = { resolve, reject, promise };
+        });
 
         // Send data to worker
         this.pendingRequests.push(message);
         this.pendingRequestsChanged(this.pendingRequests);
         this.getProcess().send({ message: message, id: id, data: data, request: true });
-        return defer.promise;
+        return promise;
     }
 
     /**
@@ -155,12 +154,13 @@ class RequesterResponder {
                 }
 
                 // this needs to be the new last
-                var defer = Promise.defer<Response>();
-                this.currentLastOfType[message] = {
-                    data: data,
-                    defer: defer
-                }
-                return defer.promise;
+                const promise = new Promise<Response>((resolve,reject)=>{
+                    this.currentLastOfType[message] = {
+                        data: data,
+                        defer: {promise,resolve,reject}
+                    }
+                });
+                return promise;
             }
         };
     }
@@ -231,10 +231,19 @@ export class Parent extends RequesterResponder {
     /** start worker */
     startWorker(childJsPath: string, terminalError: (e: Error) => any, customArguments: string[]) {
         try {
+            /** At least on NixOS, the environment must be preserved for
+                dynamic libraries to be properly linked.
+                On Windows/MacOS, it needs to be cleared, cf. atom/atom#2887 */
+            var spawnEnv = (process.platform === 'linux') ? Object.create(process.env) : {};
+            spawnEnv['ELECTRON_RUN_AS_NODE'] = 1;
             this.child = spawn(this.node, [
             // '--debug', // Uncomment if you want to debug the child process
                 childJsPath
-            ].concat(customArguments), { cwd: path.dirname(childJsPath), env: { ATOM_SHELL_INTERNAL_RUN_AS_NODE: '1' }, stdio: ['ipc'] });
+            ].concat(customArguments), {
+              cwd: path.dirname(childJsPath),
+              env: spawnEnv,
+              stdio: ['ipc']
+            });
 
             this.child.on('error', (err) => {
                 if (err.code === "ENOENT" && err.path === this.node) {

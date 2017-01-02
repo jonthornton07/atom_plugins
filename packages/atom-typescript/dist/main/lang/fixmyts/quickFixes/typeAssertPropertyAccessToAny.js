@@ -1,3 +1,4 @@
+"use strict";
 var TypeAssertPropertyAccessToAny = (function () {
     function TypeAssertPropertyAccessToAny() {
         this.key = TypeAssertPropertyAccessToAny.name;
@@ -6,7 +7,7 @@ var TypeAssertPropertyAccessToAny = (function () {
         var relevantError = info.positionErrors.filter(function (x) { return x.code == ts.Diagnostics.Property_0_does_not_exist_on_type_1.code; })[0];
         if (!relevantError)
             return;
-        if (info.positionNode.kind !== 66)
+        if (info.positionNode.kind !== ts.SyntaxKind.Identifier)
             return;
         var match = getIdentifierName(info.positionErrorMessages[0]);
         if (!match)
@@ -16,10 +17,12 @@ var TypeAssertPropertyAccessToAny = (function () {
     };
     TypeAssertPropertyAccessToAny.prototype.provideFix = function (info) {
         var parent = info.positionNode.parent;
-        if (parent.kind == 163) {
+        if (parent.kind == ts.SyntaxKind.PropertyAccessExpression) {
             var propertyAccess = parent;
+            var idx = propertyAccess.getChildren().indexOf(info.positionNode);
+            var prev = propertyAccess.getChildAt(idx - 2);
             var start = propertyAccess.getStart();
-            var end = propertyAccess.dotToken.getStart();
+            var end = prev.getEnd();
             var oldText = propertyAccess.getText().substr(0, end - start);
             var refactoring = {
                 filePath: info.filePath,
@@ -34,7 +37,7 @@ var TypeAssertPropertyAccessToAny = (function () {
         return [];
     };
     return TypeAssertPropertyAccessToAny;
-})();
+}());
 exports.TypeAssertPropertyAccessToAny = TypeAssertPropertyAccessToAny;
 function getIdentifierName(errorText) {
     var match = /Property \'(\w+)\' does not exist on type \.*/.exec(errorText);

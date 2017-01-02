@@ -1,0 +1,78 @@
+{
+  "_args": [
+    [
+      {
+        "raw": "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/d-11702-56394-hcz088/package.tgz",
+        "scope": null,
+        "escapedName": null,
+        "name": null,
+        "rawSpec": "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/d-11702-56394-hcz088/package.tgz",
+        "spec": "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/d-11702-56394-hcz088/package.tgz",
+        "type": "local"
+      },
+      "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/apm-install-dir-11702-56394-1gkl9by"
+    ]
+  ],
+  "_from": "../d-11702-56394-hcz088/package.tgz",
+  "_id": "kite@0.6.1",
+  "_inCache": true,
+  "_installable": true,
+  "_location": "/kite",
+  "_phantomChildren": {},
+  "_requested": {
+    "raw": "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/d-11702-56394-hcz088/package.tgz",
+    "scope": null,
+    "escapedName": null,
+    "name": null,
+    "rawSpec": "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/d-11702-56394-hcz088/package.tgz",
+    "spec": "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/d-11702-56394-hcz088/package.tgz",
+    "type": "local"
+  },
+  "_requiredBy": [
+    "#USER"
+  ],
+  "_resolved": "file:../d-11702-56394-hcz088/package.tgz",
+  "_shasum": "5a7ab921f3663098bd0b2bc57bb5d9e50850234a",
+  "_shrinkwrap": null,
+  "_spec": "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/d-11702-56394-hcz088/package.tgz",
+  "_where": "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/apm-install-dir-11702-56394-1gkl9by",
+  "bugs": {
+    "url": "https://github.com/kiteco/atom-plugin/issues"
+  },
+  "consumedServices": {
+    "status-bar": {
+      "versions": {
+        "^1.0.0": "consumeStatusBar"
+      }
+    }
+  },
+  "dependencies": {
+    "kite-installer": "0.4.8",
+    "mixpanel": "^0.5.0"
+  },
+  "description": "Python programming copilot — Kite shows cloud-powered completions, documentation, and examples.",
+  "devDependencies": {},
+  "engines": {
+    "atom": ">=1.0.0 <2.0.0"
+  },
+  "homepage": "https://github.com/kiteco/atom-plugin#readme",
+  "keywords": [],
+  "license": "MIT",
+  "main": "./lib/kite",
+  "name": "kite",
+  "optionalDependencies": {},
+  "providedServices": {
+    "autocomplete.provider": {
+      "versions": {
+        "2.0.0": "completions"
+      }
+    }
+  },
+  "readme": "Kite for Atom\n=============\n\nKite gives you completions and documentation in Atom, sorted by popularity.\n\nWe'll be adding many more features very soon.\n\nYou can learn more about the broader Kite product at <http://kite.com>.  As part of this package, you also get the Kite Sidebar, which shows more information as you're working.  You can access the Kite Sidebar by launching Kite in your Applications folder.\n",
+  "readmeFilename": "README.md",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kiteco/atom-plugin.git"
+  },
+  "version": "0.6.1"
+}

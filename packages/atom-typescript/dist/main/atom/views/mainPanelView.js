@@ -1,11 +1,12 @@
+"use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-var view = require('./view');
+var view = require("./view");
 var $ = view.$;
-var lineMessageView = require('./lineMessageView');
+var lineMessageView = require("./lineMessageView");
 var atomUtils = require("../atomUtils");
 var parent = require("../../../worker/parent");
 var utils = require("../../lang/utils");
@@ -15,115 +16,132 @@ var panelHeaders = {
     build: 'Last Build Output',
     references: 'References'
 };
-var gotoHistory = require('../gotoHistory');
+var gotoHistory = require("../gotoHistory");
 var MainPanelView = (function (_super) {
     __extends(MainPanelView, _super);
     function MainPanelView() {
-        _super.apply(this, arguments);
-        this.pendingRequests = [];
-        this.expanded = false;
-        this.clearedError = true;
+        var _this = _super.apply(this, arguments) || this;
+        _this.pendingRequests = [];
+        _this.expanded = false;
+        _this.clearedError = true;
+        return _this;
     }
     MainPanelView.content = function () {
         var _this = this;
         var btn = function (view, text, className) {
             if (className === void 0) { className = ''; }
             return _this.button({
-                'class': "btn " + className,
+                'class': "btn btn-sm " + className,
                 'click': view + "PanelSelectedClick",
-                'outlet': view + "PanelBtn",
-                'style': 'top:-2px!important'
+                'outlet': view + "PanelBtn"
             }, text);
         };
         this.div({
-            class: 'atomts atomts-main-panel-view native-key-bindings layout horizontal',
+            class: 'atomts atomts-main-panel-view native-key-bindings',
             tabindex: '-1'
         }, function () {
             _this.div({
-                class: 'panel-resize-handle',
-                style: 'position: absolute; top: 0; left: 0; right: 0; height: 10px; cursor: row-resize; z-index: 3; -webkit-user-select:none'
-            });
-            _this.div({
-                class: 'panel-heading layout horizontal',
-                style: '-webkit-user-select:none',
+                class: 'layout horizontal',
+                style: '-webkit-user-select: none; flex-wrap: wrap',
                 dblclick: 'toggle'
             }, function () {
                 _this.span({
-                    style: 'cursor: pointer; color: rgb(0, 148, 255); -webkit-user-select:none',
-                    click: 'toggle'
-                }, function () {
-                    _this.span({ class: "icon-microscope" });
-                    _this.span({ style: 'font-weight:bold' }, " TypeScript ");
-                });
-                _this.div({
-                    class: 'btn-group',
-                    style: 'margin-left: 5px'
-                }, function () {
-                    btn("error", panelHeaders.error, 'selected');
-                    btn("build", panelHeaders.build);
-                    btn("references", panelHeaders.references);
-                });
-                _this.div({
-                    style: 'display:inline-block'
+                    class: 'layout horizontal atomts-panel-header',
+                    style: 'align-items: center'
                 }, function () {
                     _this.span({
-                        style: 'margin-left:10px; transition: color 1s',
-                        outlet: 'fileStatus'
-                    });
-                });
-                _this.div({
-                    class: 'heading-summary flex',
-                    style: 'display:inline-block; margin-left:5px; margin-top:3px; overflow: hidden; white-space:nowrap; text-overflow: ellipsis',
-                    outlet: 'summary'
-                });
-                _this.progress({
-                    class: 'inline-block build-progress',
-                    style: 'display: none; color:red',
-                    outlet: 'buildProgress'
-                });
-                _this.span({ class: 'section-pending', outlet: 'sectionPending' }, function () {
-                    _this.span({
-                        outlet: 'txtPendingCount',
-                        style: 'cursor: pointer; margin-right: 7px;',
-                    });
-                    _this.span({
-                        class: 'loading loading-spinner-tiny inline-block',
-                        style: 'cursor: pointer; margin-right: 7px;',
-                        click: 'showPending'
-                    });
-                });
-                _this.div({
-                    class: 'heading-buttons',
-                    style: 'width:50px; display:inline-block'
-                }, function () {
-                    _this.span({
-                        class: 'heading-fold icon-unfold',
-                        style: 'cursor: pointer; margin-right:10px',
-                        outlet: 'btnFold',
+                        style: 'cursor: pointer; color: rgb(0, 148, 255); -webkit-user-select: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 16px',
                         click: 'toggle'
+                    }, function () {
+                        _this.span({ class: 'icon-microscope' });
+                        _this.span({ style: 'font-weight: bold' }, 'TypeScript');
                     });
-                    _this.span({
-                        class: 'heading-fold icon-sync',
-                        style: 'cursor: pointer',
-                        outlet: 'btnSoftReset',
-                        click: 'softReset'
+                    _this.div({
+                        class: 'btn-group',
+                        style: 'margin-left: 6px; flex: 1 0 auto'
+                    }, function () {
+                        btn('error', panelHeaders.error, 'selected');
+                        btn('build', panelHeaders.build);
+                        btn('references', panelHeaders.references);
                     });
                 });
-            });
-            _this.div({
-                class: 'panel-body atomts-panel-body padded',
-                outlet: 'errorBody',
-                style: 'overflow-y: auto; display:none'
-            });
-            _this.div({
-                class: 'panel-body atomts-panel-body padded',
-                outlet: 'buildBody',
-                style: 'overflow-y: auto; display:none'
-            });
-            _this.div({
-                class: 'panel-body atomts-panel-body padded',
-                outlet: 'referencesBody',
-                style: 'overflow-y: auto; display:none'
+                _this.span({
+                    class: 'layout horizontal atomts-panel-header',
+                    style: 'align-items: center; flex: 1 1 auto; line-height: 24px;'
+                }, function () {
+                    _this.div({
+                        style: 'cursor: pointer;',
+                        click: 'clickedCurrentTsconfigFilePath'
+                    }, function () {
+                        _this.span({
+                            outlet: 'tsconfigInUse'
+                        });
+                    });
+                    _this.div({
+                        style: 'overflow-x: visible; white-space: nowrap;'
+                    }, function () {
+                        _this.span({
+                            style: 'margin-left: 10px; transition: color 1s',
+                            outlet: 'fileStatus'
+                        });
+                    });
+                    _this.div({
+                        class: 'heading-summary flex',
+                        style: 'margin-left: 5px; overflow: hidden; white-space:nowrap; text-overflow: ellipsis',
+                        outlet: 'summary'
+                    });
+                    _this.progress({
+                        class: 'inline-block build-progress',
+                        style: 'display: none; color: red',
+                        outlet: 'buildProgress'
+                    });
+                    _this.span({
+                        class: 'section-pending',
+                        outlet: 'sectionPending',
+                        click: 'showPending'
+                    }, function () {
+                        _this.span({
+                            outlet: 'txtPendingCount',
+                            style: 'cursor: pointer; margin-left: 5px',
+                        });
+                        _this.span({
+                            class: 'loading loading-spinner-tiny inline-block',
+                            style: 'cursor: pointer; margin-left: 5px'
+                        });
+                    });
+                    _this.div({
+                        class: 'heading-buttons',
+                        style: 'margin-left: 5px'
+                    }, function () {
+                        _this.span({
+                            class: 'heading-fold icon-unfold',
+                            style: 'cursor: pointer; margin-right: 10px',
+                            outlet: 'btnFold',
+                            click: 'toggle'
+                        });
+                        _this.span({
+                            class: 'heading-fold icon-sync',
+                            style: 'cursor: pointer',
+                            outlet: 'btnSoftReset',
+                            click: 'softReset'
+                        });
+                    });
+                });
+                _this.div({
+                    class: 'panel-body atomts-panel-body',
+                    outlet: 'errorBody',
+                    style: 'overflow-y: auto; flex: 1 0 100%; display: none'
+                });
+                _this.div({
+                    class: 'panel-body atomts-panel-body',
+                    outlet: 'buildBody',
+                    style: 'overflow-y: auto; flex: 1 0 100%; display: none'
+                });
+                _this.div({
+                    class: 'panel-body atomts-panel-body',
+                    outlet: 'referencesBody',
+                    style: 'overflow-y: auto; flex: 1 0 100%; display: none'
+                });
             });
         });
     };
@@ -146,17 +164,44 @@ var MainPanelView = (function (_super) {
                 .then(function (resp) { return errorView.setErrors(editor.getPath(), resp.errors); });
         }
     };
-    MainPanelView.prototype.updateFileStatus = function (filePath) {
-        var status = fileStatusCache_1.getFileStatus(filePath);
-        this.fileStatus.removeClass('icon-x icon-check text-error text-success');
-        if (status.emitDiffers || status.modified) {
-            this.fileStatus.text('Js emit is outdated');
-            this.fileStatus.addClass('icon-x text-error');
+    MainPanelView.prototype.setTsconfigInUse = function (tsconfigFilePath) {
+        this.fullTsconfigPath = tsconfigFilePath;
+        if (!this.fullTsconfigPath) {
+            this.tsconfigInUse.text('no tsconfig.json');
         }
         else {
-            this.fileStatus.text('Js emit up to date');
-            this.fileStatus.addClass('icon-check text-success');
+            var path = atomUtils.getFilePathRelativeToAtomProject(tsconfigFilePath);
+            this.tsconfigInUse.text("" + path);
         }
+    };
+    MainPanelView.prototype.clickedCurrentTsconfigFilePath = function () {
+        if (!this.fullTsconfigPath) {
+            atom.notifications.addInfo("No tsconfig for current file");
+            return;
+        }
+        else {
+            atomUtils.openFile(this.fullTsconfigPath);
+        }
+    };
+    MainPanelView.prototype.updateFileStatus = function (filePath) {
+        var _this = this;
+        parent.getProjectFileDetails({ filePath: filePath }).then(function (fileDetails) {
+            if (!fileDetails.project.compileOnSave) {
+                _this.fileStatus.addClass("hidden");
+            }
+            else {
+                var status_1 = fileStatusCache_1.getFileStatus(filePath);
+                _this.fileStatus.removeClass('icon-x icon-check text-error text-success hidden');
+                if (status_1.emitDiffers || status_1.modified) {
+                    _this.fileStatus.text('JS Outdated');
+                    _this.fileStatus.addClass('icon-x text-error');
+                }
+                else {
+                    _this.fileStatus.text('JS Current');
+                    _this.fileStatus.addClass('icon-check text-success');
+                }
+            }
+        });
     };
     MainPanelView.prototype.showPending = function () {
         atom.notifications.addInfo('Pending Requests: <br/> - ' + this.pendingRequests.join('<br/> - '));
@@ -166,10 +211,10 @@ var MainPanelView = (function (_super) {
         this.txtPendingCount.html("<span class=\"text-highlight\">" + this.pendingRequests.length + "</span>");
         this.sectionPending.stop();
         if (pending.length) {
-            this.sectionPending.fadeIn(500);
+            this.sectionPending.animate({ opacity: 0.5 }, 500);
         }
         else {
-            this.sectionPending.fadeOut(200);
+            this.sectionPending.animate({ opacity: 0 }, 200);
         }
     };
     MainPanelView.prototype.errorPanelSelectedClick = function () {
@@ -252,8 +297,8 @@ var MainPanelView = (function (_super) {
         var title = panelHeaders.references + " ( <span class=\"text-highlight\" style=\"font-weight: bold\">Found: " + references.length + "</span> )";
         this.referencesPanelBtn.html(title);
         gotoHistory.referencesOutput.members = [];
-        for (var _i = 0; _i < references.length; _i++) {
-            var ref = references[_i];
+        for (var _i = 0, references_1 = references; _i < references_1.length; _i++) {
+            var ref = references_1[_i];
             var view = new lineMessageView.LineMessageView({
                 goToLine: function (filePath, line, col) { return gotoHistory.gotoLine(filePath, line, col, gotoHistory.referencesOutput); },
                 message: '',
@@ -268,6 +313,7 @@ var MainPanelView = (function (_super) {
     };
     MainPanelView.prototype.clearError = function () {
         this.clearedError = true;
+        this.clearSummary();
         this.errorBody.empty();
     };
     MainPanelView.prototype.addError = function (view) {
@@ -287,13 +333,17 @@ var MainPanelView = (function (_super) {
             handler(this.summary);
         }
     };
+    MainPanelView.prototype.clearSummary = function () {
+        this.summary.html('');
+        this.summary.off();
+    };
     MainPanelView.prototype.setErrorPanelErrorCount = function (fileErrorCount, totalErrorCount) {
         var title = panelHeaders.error + " ( <span class=\"text-success\">No Errors</span> )";
         if (totalErrorCount > 0) {
             title = panelHeaders.error + " (\n                <span class=\"text-highlight\" style=\"font-weight: bold\"> " + fileErrorCount + " </span>\n                <span class=\"text-error\" style=\"font-weight: bold;\"> file" + (fileErrorCount === 1 ? "" : "s") + " </span>\n                <span class=\"text-highlight\" style=\"font-weight: bold\"> " + totalErrorCount + " </span>\n                <span class=\"text-error\" style=\"font-weight: bold;\"> error" + (totalErrorCount === 1 ? "" : "s") + " </span>\n            )";
         }
         else {
-            this.summary.html('');
+            this.clearSummary();
             this.errorBody.html('<span class="text-success">No errors in open files \u2665</span>');
         }
         this.errorPanelBtn.html(title);
@@ -351,7 +401,7 @@ var MainPanelView = (function (_super) {
         }
     };
     return MainPanelView;
-})(view.View);
+}(view.View));
 exports.MainPanelView = MainPanelView;
 var panel;
 function attach() {
@@ -376,16 +426,21 @@ function hide() {
 exports.hide = hide;
 var errorView;
 (function (errorView) {
+    var MAX_ERRORS = 50;
     var filePathErrors = new utils.Dict();
     errorView.setErrors = function (filePath, errorsForFile) {
-        if (!errorsForFile.length)
+        if (!exports.panelView || !exports.panelView.clearError) {
+            return;
+        }
+        if (!errorsForFile.length) {
             filePathErrors.clearValue(filePath);
+        }
         else {
-            if (errorsForFile.length > 50)
-                errorsForFile = errorsForFile.slice(0, 50);
+            if (errorsForFile.length > MAX_ERRORS) {
+                errorsForFile = errorsForFile.slice(0, MAX_ERRORS);
+            }
             filePathErrors.setValue(filePath, errorsForFile);
         }
-        ;
         exports.panelView.clearError();
         var fileErrorCount = filePathErrors.keys().length;
         gotoHistory.errorsInOpenFiles.members = [];

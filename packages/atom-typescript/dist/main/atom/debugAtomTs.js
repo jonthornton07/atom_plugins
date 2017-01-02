@@ -1,4 +1,5 @@
-var atomConfig = require('./atomConfig');
+"use strict";
+var atomConfig = require("./atomConfig");
 function runDebugCode(details) {
     if (!atomConfig.debugAtomTs)
         return;

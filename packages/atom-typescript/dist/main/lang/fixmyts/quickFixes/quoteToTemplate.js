@@ -1,9 +1,10 @@
+"use strict";
 var QuoteToTemplate = (function () {
     function QuoteToTemplate() {
         this.key = QuoteToTemplate.name;
     }
     QuoteToTemplate.prototype.canProvideFix = function (info) {
-        if (info.positionNode.kind === 8) {
+        if (info.positionNode.kind === ts.SyntaxKind.StringLiteral) {
             return { display: "Convert to Template String" };
         }
     };
@@ -29,5 +30,5 @@ var QuoteToTemplate = (function () {
         return [refactoring];
     };
     return QuoteToTemplate;
-})();
+}());
 exports.QuoteToTemplate = QuoteToTemplate;

@@ -1,32 +1,33 @@
-var atomConfig = require('./atom/atomConfig');
+"use strict";
+var atomConfig = require("./atom/atomConfig");
 var makeTypeScriptGlobal_1 = require("../typescript/makeTypeScriptGlobal");
 makeTypeScriptGlobal_1.makeTsGlobal(atomConfig.typescriptServices);
-var path = require('path');
-var fs = require('fs');
-var apd = require('atom-package-dependencies');
+var path = require("path");
+var fs = require("fs");
 var mainPanelView_1 = require("./atom/views/mainPanelView");
-var autoCompleteProvider = require('./atom/autoCompleteProvider');
-var tooltipManager = require('./atom/tooltipManager');
-var atomUtils = require('./atom/atomUtils');
+var autoCompleteProvider = require("./atom/autoCompleteProvider");
+var tooltipManager = require("./atom/tooltipManager");
+var atomUtils = require("./atom/atomUtils");
 var commands = require("./atom/commands/commands");
-var onSaveHandler = require('./atom/onSaveHandler');
-var debugAtomTs = require('./atom/debugAtomTs');
+var onSaveHandler = require("./atom/onSaveHandler");
+var debugAtomTs = require("./atom/debugAtomTs");
 var atom_space_pen_views_1 = require("atom-space-pen-views");
-var documentationView = require('./atom/views/documentationView');
-var renameView = require('./atom/views/renameView');
+var documentationView = require("./atom/views/documentationView");
+var renameView = require("./atom/views/renameView");
 var mainPanelView = require("./atom/views/mainPanelView");
+var semanticView = require("./atom/views/semanticView");
 var fileStatusCache_1 = require("./atom/fileStatusCache");
 var editorSetup = require("./atom/editorSetup");
 var statusBar;
 var statusBarMessage;
 var editorWatch;
 var autoCompleteWatch;
-var parent = require('../worker/parent');
+var parent = require("../worker/parent");
 exports.config = atomConfig.schema;
 var utils_1 = require("./lang/utils");
 var hideIfNotActiveOnStart = utils_1.debounce(function () {
     var editor = atom.workspace.getActiveTextEditor();
-    if (!atomUtils.onDiskAndTs(editor)) {
+    if (!atomUtils.onDiskAndTsRelated(editor)) {
         mainPanelView.hide();
     }
 }, 100);
@@ -36,20 +37,31 @@ function onlyOnceStuff() {
         return;
     else
         __onlyOnce = true;
+    mainPanelView.attach();
     documentationView.attach();
     renameView.attach();
+    semanticView.attach();
 }
 function readyToActivate() {
     parent.startWorker();
     atom.workspace.onDidChangeActivePaneItem(function (editor) {
         if (atomUtils.onDiskAndTs(editor)) {
             var filePath = editor.getPath();
+            onlyOnceStuff();
+            parent.getProjectFileDetails({ filePath: filePath }).then(function (res) {
+                mainPanelView.panelView.setTsconfigInUse(res.projectFilePath);
+            }).catch(function (err) {
+                mainPanelView.panelView.setTsconfigInUse('');
+            });
             parent.errorsForFile({ filePath: filePath })
                 .then(function (resp) {
                 mainPanelView_1.errorView.setErrors(filePath, resp.errors);
                 atomUtils.triggerLinter();
             });
             mainPanelView.panelView.updateFileStatus(filePath);
+            mainPanelView.show();
+        }
+        else if (atomUtils.onDiskAndTsRelated(editor)) {
             mainPanelView.show();
         }
         else {
@@ -65,11 +77,15 @@ function readyToActivate() {
             var isTst = ext === '.tst';
             try {
                 onlyOnceStuff();
+                parent.getProjectFileDetails({ filePath: filePath }).then(function (res) {
+                    mainPanelView.panelView.setTsconfigInUse(res.projectFilePath);
+                }).catch(function (err) {
+                    mainPanelView.panelView.setTsconfigInUse('');
+                });
                 var onDisk = false;
                 if (fs.existsSync(filePath)) {
                     onDisk = true;
                 }
-                mainPanelView.attach();
                 hideIfNotActiveOnStart();
                 debugAtomTs.runDebugCode({ filePath: filePath, editor: editor });
                 if (onDisk) {
@@ -102,14 +118,6 @@ function readyToActivate() {
                 });
                 var buffer = editor.buffer;
                 var fasterChangeObserver = editor.buffer.onDidChange(function (diff) {
-                    //// For debugging
-                    // console.log(buffer.characterIndexForPosition(diff.oldRange.start), buffer.characterIndexForPosition(diff.oldRange.end), diff.oldText,
-                    //     buffer.characterIndexForPosition(diff.newRange.start), buffer.characterIndexForPosition(diff.newRange.end), diff.newText);
-                    //// Examples
-                    //// 20 20 "aaaa" 20 20 ""
-                    //// 23 23 "" 23 24 "a"
-                    //// 20 20 "" 20 24 "aaaa"
-                    // stack();
                     var newText = diff.newText;
                     var oldText = diff.oldText;
                     var start = { line: diff.oldRange.start.row, col: diff.oldRange.start.column };
@@ -138,29 +146,7 @@ function readyToActivate() {
     commands.registerCommands();
 }
 function activate(state) {
-    var linter = apd.require('linter');
-    var acp = apd.require('autocomplete-plus');
-    if (!linter || !acp) {
-        var notification = atom.notifications.addInfo('AtomTS: Some dependencies not found. Running "apm install" on these for you. Please wait for a success confirmation!', { dismissable: true });
-        apd.install(function () {
-            atom.notifications.addSuccess("AtomTS: Dependencies installed correctly. Enjoy TypeScript \u2665", { dismissable: true });
-            notification.dismiss();
-            if (atom.packages.isPackageDisabled('linter'))
-                atom.packages.enablePackage('linter');
-            if (atom.packages.isPackageDisabled('autocomplete-plus'))
-                atom.packages.enablePackage('autocomplete-plus');
-            if (!apd.require('linter'))
-                atom.packages.loadPackage('linter');
-            if (!apd.require('autocomplete-plus'))
-                atom.packages.loadPackage('autocomplete-plus');
-            atom.packages.activatePackage('linter')
-                .then(function () { return atom.packages.activatePackage('autocomplete-plus'); })
-                .then(function () { return waitForGrammarActivation(); })
-                .then(function () { return readyToActivate(); });
-        });
-        return;
-    }
-    waitForGrammarActivation().then(function () { return readyToActivate(); });
+    require('atom-package-deps').install('atom-typescript').then(waitForGrammarActivation).then(readyToActivate);
 }
 exports.activate = activate;
 function deactivate() {
@@ -195,16 +181,23 @@ function consumeSnippets(snippetsManager) {
 exports.consumeSnippets = consumeSnippets;
 function waitForGrammarActivation() {
     var activated = false;
-    var deferred = Promise.defer();
-    var editorWatch = atom.workspace.observeTextEditors(function (editor) {
-        if (activated)
-            return;
-        editor.observeGrammar(function (grammar) {
-            if (grammar.packageName === 'atom-typescript') {
-                activated = true;
-                deferred.resolve({});
-            }
+    var promise = new Promise(function (resolve, reject) {
+        var editorWatch = atom.workspace.observeTextEditors(function (editor) {
+            if (activated)
+                return;
+            editor.observeGrammar(function (grammar) {
+                if (grammar.packageName === 'atom-typescript') {
+                    activated = true;
+                    resolve({});
+                    editorWatch.dispose();
+                }
+            });
         });
     });
-    return deferred.promise.then(function () { return editorWatch.dispose(); });
+    return promise;
 }
+var hyperclickProvider = require("../hyperclickProvider");
+function getHyperclickProvider() {
+    return hyperclickProvider;
+}
+exports.getHyperclickProvider = getHyperclickProvider;

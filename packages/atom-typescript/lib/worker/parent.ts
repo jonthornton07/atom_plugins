@@ -24,11 +24,15 @@ if (debugSync) {
 }
 
 export function startWorker() {
-    parent.startWorker(__dirname + '/child.js', showError, atomConfig.typescriptServices ? [atomConfig.typescriptServices] : []);
+    if (!debugSync) {
+        parent.startWorker(__dirname + '/child.js', showError, atomConfig.typescriptServices ? [atomConfig.typescriptServices] : []);
+    }
 }
 
 export function stopWorker() {
-    parent.stopWorker();
+    if (!debugSync) {
+        parent.stopWorker();
+    }
 }
 
 function showError(error: Error) {
@@ -81,6 +85,7 @@ export var getRelativePathsInProject = catchCommonErrors(parent.sendToIpc(projec
 export var debugLanguageServiceHostVersion = parent.sendToIpc(projectService.debugLanguageServiceHostVersion);
 export var getProjectFileDetails = parent.sendToIpc(projectService.getProjectFileDetails);
 export var getNavigationBarItems = parent.sendToIpc(projectService.getNavigationBarItems);
+export var getSemtanticTree = parent.sendToIpc(projectService.getSemtanticTree);
 export var getNavigateToItems = parent.sendToIpc(projectService.getNavigateToItems);
 export var getReferences = parent.sendToIpc(projectService.getReferences);
 export var getAST = parent.sendToIpc(projectService.getAST);
@@ -94,6 +99,7 @@ export var getOutputJsStatus = parent.sendToIpc(projectService.getOutputJsStatus
 export var softReset = parent.sendToIpc(projectService.softReset);
 export var getRenameFilesRefactorings = parent.sendToIpc(projectService.getRenameFilesRefactorings);
 export var createProject = parent.sendToIpc(projectService.createProject);
+export var toggleBreakpoint = parent.sendToIpc(projectService.toggleBreakpoint);
 
 // Automatically include all functions from "parentResponses" as responders
 import queryParent = require('./queryParent');

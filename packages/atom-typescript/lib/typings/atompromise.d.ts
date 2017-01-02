@@ -86,9 +86,6 @@ interface PromiseConstructor {
      * @returns A resolved promise.
      */
     resolve(): Promise<void>;
-
-    /// BAS ADDITIONS AFTER INSPECTION INTO ATOM
-    defer<T>(): PromiseDeferred<T>;
 }
 
 interface PromiseDeferred<T> {
@@ -96,3 +93,7 @@ interface PromiseDeferred<T> {
 }
 
 declare var Promise: PromiseConstructor;
+
+declare module 'pinkie-promise'{
+    export = Promise;
+}

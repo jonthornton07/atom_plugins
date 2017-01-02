@@ -1,10 +1,12 @@
 "*":
-  "autocomplete-python": {}
+  "autocomplete-python":
+    useKite: false
   core:
     disabledPackages: [
       "language-javascript-semantic"
       "language-javascript-subtlegradient"
       "jshint"
+      "kite"
     ]
     telemetryConsent: "no"
     themes: [

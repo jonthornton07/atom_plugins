@@ -1,3 +1,7 @@
+# FAQ
+
+Please checkout [the FAQ](https://github.com/TypeStrong/atom-typescript/blob/master/docs/faq.md) before creating a new issue :rose:
+
 # TIP
 Before doing any meaningful work or even investigating [please create an issue for discussion](https://github.com/TypeStrong/atom-typescript/issues) so we don't have duplicate work and we don't step on your toes.
 
@@ -13,6 +17,8 @@ apm link -l
 
 You still have to reload atom with `ctrl+alt+r` to test your changes.
 
+Now you can use atom-typescript *to develop atom-typescript*. This is covered more in the workflow https://github.com/TypeStrong/atom-typescript/blob/master/CONTRIBUTING.md#workflow
+
 (Note: [There is more guidance here](https://github.com/atom/atom/blob/master/docs/contributing-to-packages.md) but what we have is sufficient. `apm link -l` creates a symlink for the folder into `%HOMEPATH%\.atom\packages`)
 
 **Optional**: If you are working on the binaries that are used if we deploy the package to NPM you can run (again from the directory that has `package.json`):
@@ -20,6 +26,9 @@ You still have to reload atom with `ctrl+alt+r` to test your changes.
 ```bash
 npm link
 ```
+
+## Pull
+Whenever you pull in latest changes, you should run `npm install`. Whenever we update to latest TypeScript we need to recompile all our js to make sure everybody gets the same code.
 
 ## Git
 You need to have git. Note on windows long file paths can be an issue so run:
@@ -31,16 +40,10 @@ And use `Shift+Delete` to delete files if simple `delete` doesn't work.
 
 # Various
 
-## Pull
-
-Whenever you pull in latest changes, you should run `npm install`. Otherwise the output js you get might be different from the desired one. This is because the TypeScript compiler is adding new enum members and that shifts the *js emit* for our code a bit.
-
-Also: Whenever we update to latest TypeScript we need to recompile all our js.
-
 ## Publishing
 
 * If you have only fixed bugs in a backward-compatible way (or consider your changes very minimal), run `apm publish patch`.
-* If you have implemented new functionality, run `apm publish minor`.
+* If you have implemented new functionality, run `apm publish minor`. (A TypeScript update should at least be minor).
 * For breaking changes run `apm publish major`. These must be justified with a reason documented in `changelog.md`
 
 Additional Notes:
@@ -58,7 +61,7 @@ Some shortcuts:
 There are *lots of ways* to do this. The ones we use right now:
 
 * You can do `console.error` from `projectService` and it will get logged to the atom's console (`ctrl+alt+i`). That's the quickest.
-* You can call `projectService` in `sync` from the UI thread if you want to debug using atom's built in tools (`ctrl+alt+i`). Set `parent.debug` to true and it takes care of the rest. [Here is the code](https://github.com/TypeStrong/atom-typescript/blob/d88babd82a8390ef43acac474965bc6d2f65083b/lib/worker/parent.ts#L5).
+* You can call `projectService` in `sync` from the UI thread if you want to debug using atom's built in tools (`ctrl+alt+i`). Set `debugSync` to true in `./lib/worker/debug.ts`, and it takes care of the rest.
 
 Also [if there is an error in `projectService` it gets logged to the console as a rejected promise](https://raw.githubusercontent.com/TypeStrong/atom-typescript-examples/master/screens/debugPromises.gif).
 
@@ -91,29 +94,8 @@ Advantage: you only need to define the query/response interface once (in `projec
 ## Language Service Documentation
 The TypeScript Language service docs: https://github.com/Microsoft/TypeScript/wiki/Using-the-Compiler-API
 
-## Depending upon other atom packages
-There isn't a documented way : https://discuss.atom.io/t/depending-on-other-packages/2360/16
-
-So using https://www.npmjs.com/package/atom-package-dependencies
-
-```js
-var apd = require('atom-package-dependencies');
-
-var mdp = apd.require('markdown-preview');
-mdp.toggle();
-
-// Also
-apd.install();
-```
-
 ## Showing errors in atom
 Done using the `linter` plugin. If you think about it. TypeScript is really just a super powerful version of `jshint` and that is the reason to use `linter` for errors.
-
-You need to inherit from `Linter` class from the `linter`: http://atomlinter.github.io/Linter/
-```js
-var linterPath = atom.packages.getLoadedPackage("linter").path
-var Linter:LinterClass = require linterPath+"/lib/linter"
-```
 Just look at `linter.ts` in our code.
 
 ## Grammar
@@ -129,3 +111,7 @@ Quick fixes need to implement the `QuickFix` interface ([code here](https://gith
 Once you have the quickfix created just put it into the [quickfix registry](https://github.com/TypeStrong/atom-typescript/blob/a91f7e0c935ed2bdc2c642350af50a7a5aed70ad/lib/main/lang/fixmyts/quickFixRegistry.ts#L14-L24) so that the infrastructure picks it up.
 
 **Additional Tips** : One indespensible tool when creating a quick fix is the [AST viewer](https://github.com/TypeStrong/atom-typescript#ast-visualizer) which allows you to investigate the TypeScript language service view of the file.
+
+# Video
+
+A video on some of the internals : https://www.youtube.com/watch?v=WOuNb2MGR4o

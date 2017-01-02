@@ -1,6 +1,4 @@
-/**
- * Gets the refactorings you would need if you move files around
- */
+"use strict";
 var astUtils_1 = require("../fixmyts/astUtils");
 var path = require("path");
 var tsconfig_1 = require("../../tsconfig/tsconfig");
@@ -23,8 +21,8 @@ function getRenameFilesRefactorings(program, oldDirectoryOrFile, newDirectoryOrF
         });
         var matches = imports.filter(function (f) { return f.path == oldFileNoExt; });
         if (matches.length) {
-            for (var _i = 0; _i < matches.length; _i++) {
-                var match = matches[_i];
+            for (var _i = 0, matches_1 = matches; _i < matches_1.length; _i++) {
+                var match = matches_1[_i];
                 refactorings.push({
                     filePath: sourceFile.fileName,
                     span: {

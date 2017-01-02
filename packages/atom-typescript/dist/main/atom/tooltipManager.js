@@ -1,15 +1,14 @@
-// Inspiration : https://atom.io/packages/ide-haskell
-// and https://atom.io/packages/ide-flow
-var atomUtils = require('./atomUtils');
-var parent = require('../../worker/parent');
-var path = require('path');
-var fs = require('fs');
-var emissary = require('emissary');
+"use strict";
+var atomUtils = require("./atomUtils");
+var parent = require("../../worker/parent");
+var path = require("path");
+var fs = require("fs");
+var emissary = require("emissary");
 var Subscriber = emissary.Subscriber;
-var tooltipView = require('./views/tooltipView');
+var tooltipView = require("./views/tooltipView");
 var TooltipView = tooltipView.TooltipView;
 var atom_space_pen_views_1 = require("atom-space-pen-views");
-var escape = require('escape-html');
+var escape = require("escape-html");
 function getFromShadowDom(element, selector) {
     var el = element[0];
     var found = el.rootElement.querySelectorAll(selector);
@@ -48,8 +47,8 @@ function attach(editorView, editor) {
         if (exprTypeTooltip)
             return;
         var pixelPt = pixelPositionFromMouseEvent(editorView, e);
-        pixelPt.top += editor.displayBuffer.getScrollTop();
-        pixelPt.left += editor.displayBuffer.getScrollLeft();
+        pixelPt.top += editor.getScrollTop();
+        pixelPt.left += editor.getScrollLeft();
         var screenPt = editor.screenPositionForPixelPosition(pixelPt);
         var bufferPt = editor.bufferPositionForScreenPosition(screenPt);
         var curCharPixelPt = rawView.pixelPositionForBufferPosition([bufferPt.row, bufferPt.column]);

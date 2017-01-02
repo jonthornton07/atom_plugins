@@ -19,7 +19,8 @@ interface LinterMessage {
 }
 
 export var provider = {
-    grammarScopes: ['source.ts', 'source.ts.tsx'],
+    name: 'TS',
+    grammarScopes: ['source.ts', 'source.tsx'],
     scope: 'file', //  # or 'project'
     lintOnFly: true, // # must be false for scope: 'project'
     lint: (textEditor: AtomCore.IEditor): Promise<LinterMessage[]> => {
@@ -36,7 +37,7 @@ export var provider = {
                 var linterErrors: LinterMessage[] = resp.errors.map((err) => ({
                     type: "Error",
                     filePath,
-                    html: `<span class="badge badge-flexible" style="color:rgb(0, 148, 255)"> TS </span> ${err.message}`,
+                    text: err.message,
                     range: new Range([err.startPos.line, err.startPos.col], [err.endPos.line, err.endPos.col]),
                 }));
                 return linterErrors;

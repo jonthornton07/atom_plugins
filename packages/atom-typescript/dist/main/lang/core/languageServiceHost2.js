@@ -1,6 +1,9 @@
-var path = require('path');
-var fs = require('fs');
-var textBuffer = require('basarat-text-buffer');
+"use strict";
+var path = require("path");
+var fs = require("fs");
+var os = require("os");
+var textBuffer = require("basarat-text-buffer");
+var typescriptServices_1 = require("../typescriptServices");
 function createScriptInfo(fileName, text, isOpen) {
     if (isOpen === void 0) { isOpen = false; }
     var version = 1;
@@ -114,15 +117,21 @@ function getScriptSnapShot(scriptInfo) {
         getText: function (start, end) { return textSnapshot.substring(start, end); },
         getLength: function () { return textSnapshot.length; },
         getChangeRange: getChangeRange,
-        getLineStartPositions: function () { return lineStarts; },
-        version: version
     };
+}
+function getTypescriptLocation() {
+    if (typescriptServices_1.typescriptServices) {
+        return path.dirname(typescriptServices_1.typescriptServices);
+    }
+    else {
+        return path.dirname(require.resolve('typescript'));
+    }
 }
 exports.getDefaultLibFilePath = function (options) {
     var filename = ts.getDefaultLibFileName(options);
-    return (path.join(path.dirname(require.resolve('ntypescript')), filename)).split('\\').join('/');
+    return (path.join(getTypescriptLocation(), filename)).split('\\').join('/');
 };
-exports.typescriptDirectory = path.dirname(require.resolve('ntypescript')).split('\\').join('/');
+exports.typescriptDirectory = getTypescriptLocation().split('\\').join('/');
 var LanguageServiceHost = (function () {
     function LanguageServiceHost(config) {
         var _this = this;
@@ -207,6 +216,18 @@ var LanguageServiceHost = (function () {
             return { preview: preview, position: position };
         };
         this.getCompilationSettings = function () { return _this.config.project.compilerOptions; };
+        this.getNewLine = function () {
+            var eol = os.EOL;
+            switch (_this.config.project.compilerOptions.newLine) {
+                case ts.NewLineKind.CarriageReturnLineFeed:
+                    eol = "\r\n";
+                    break;
+                case ts.NewLineKind.LineFeed:
+                    eol = "\n";
+                    break;
+            }
+            return eol;
+        };
         this.getScriptFileNames = function () { return Object.keys(_this.fileNameToScript); };
         this.getScriptVersion = function (fileName) {
             var script = _this.fileNameToScript[fileName];
@@ -227,7 +248,7 @@ var LanguageServiceHost = (function () {
             if (script) {
                 return getScriptSnapShot(script);
             }
-            else if (fs.existsSync(fileName)) {
+            else if (_this.fileExists(fileName)) {
                 _this.config.project.files.push(fileName);
                 _this.addScript(fileName);
                 return _this.getScriptSnapshot(fileName);
@@ -238,10 +259,26 @@ var LanguageServiceHost = (function () {
             return _this.config.projectFileDirectory;
         };
         this.getDefaultLibFileName = ts.getDefaultLibFileName;
-        if (!config.project.compilerOptions.noLib) {
+        this.fileExists = function (path) {
+            try {
+                var stat = fs.statSync(path);
+                return stat.isFile();
+            }
+            catch (error) {
+                return false;
+            }
+        };
+        if (!config.project.compilerOptions.noLib && !config.project.compilerOptions.lib) {
             this.addScript(exports.getDefaultLibFilePath(config.project.compilerOptions));
+        }
+        else if (Array.isArray(config.project.compilerOptions.lib)) {
+            for (var _i = 0, _a = config.project.compilerOptions.lib; _i < _a.length; _i++) {
+                var lib = _a[_i];
+                var filename = "lib." + lib + ".d.ts";
+                this.addScript((path.join(getTypescriptLocation(), filename)).split('\\').join('/'));
+            }
         }
     }
     return LanguageServiceHost;
-})();
+}());
 exports.LanguageServiceHost = LanguageServiceHost;

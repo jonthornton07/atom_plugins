@@ -1,5 +1,4 @@
-// Some docs
-// http://www.html5rocks.com/en/tutorials/webcomponents/customelements/ (look at lifecycle callback methods)
+"use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -8,7 +7,7 @@ var __extends = (this && this.__extends) || function (d, b) {
 var TsView = (function (_super) {
     __extends(TsView, _super);
     function TsView() {
-        _super.apply(this, arguments);
+        return _super.apply(this, arguments) || this;
     }
     TsView.prototype.createdCallback = function () {
         var preview = this.innerText;
@@ -19,7 +18,7 @@ var TsView = (function (_super) {
         var editor = this.editor = editorElement.getModel();
         editor.getDecorations({ class: 'cursor-line', type: 'line' })[0].destroy();
         editor.setText(preview);
-        var grammar = atom.grammars.grammarForScopeName("source.ts");
+        var grammar = atom.grammars.grammarForScopeName("source.tsx");
         editor.setGrammar(grammar);
         editor.setSoftWrapped(true);
         this.appendChild(editorElement);
@@ -28,6 +27,6 @@ var TsView = (function (_super) {
         this.editor.setText(text);
     };
     return TsView;
-})(HTMLElement);
+}(HTMLElement));
 exports.TsView = TsView;
 document.registerElement('ts-view', TsView);

@@ -1,15 +1,17 @@
+"use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-var sp = require('atom-space-pen-views');
+var sp = require("atom-space-pen-views");
 var atomUtils = require("../atomUtils");
 var FileSymbolsView = (function (_super) {
     __extends(FileSymbolsView, _super);
     function FileSymbolsView() {
-        _super.apply(this, arguments);
-        this.panel = null;
+        var _this = _super.apply(this, arguments) || this;
+        _this.panel = null;
+        return _this;
     }
     Object.defineProperty(FileSymbolsView.prototype, "$", {
         get: function () {
@@ -49,5 +51,5 @@ var FileSymbolsView = (function (_super) {
         this.hide();
     };
     return FileSymbolsView;
-})(sp.SelectListView);
+}(sp.SelectListView));
 exports.FileSymbolsView = FileSymbolsView;

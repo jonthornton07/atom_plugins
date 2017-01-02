@@ -1,34 +1,31 @@
-// Help:
-// https://github.com/atom/first-mate/
-// https://github.com/fdecampredon/brackets-typescript/blob/master/src/main/mode.ts
-// https://github.com/p-e-w/language-javascript-semantic/blob/master/lib/javascript-semantic-grammar.coffee
-// TODO: update to latest : https://github.com/atom/atom/pull/6757
+"use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-var utils = require('../lang/utils');
+var utils = require("../lang/utils");
 var TokenClass = ts.TokenClass;
 global.AtomTSBaseGrammar = require(atom.config.resourcePath + "/node_modules/first-mate/lib/grammar.js");
 var TypeScriptSemanticGrammar = (function (_super) {
     __extends(TypeScriptSemanticGrammar, _super);
     function TypeScriptSemanticGrammar(registry) {
-        _super.call(this, registry, {
+        var _this = _super.call(this, registry, {
             name: "TypeScript",
             scopeName: "source.ts",
             patterns: {},
             fileTypes: ['ts', 'tst']
-        });
-        this.registry = registry;
-        this.trailingWhiteSpaceLength = 0;
-        this.classifier = ts.createClassifier();
-        this.fullTripleSlashReferencePathRegEx = /^(\/\/\/\s*<reference\s+path\s*=\s*)('|")(.+?)\2.*?\/>/;
-        this.fullTripleSlashAMDNameRegEx = /^(\/\/\/\s*<amd-module\s+name\s*=\s*)('|")(.+?)\2.*?\/>/;
-        this.fullTripleSlashAMDDependencyPathRegEx = /^(\/\/\/\s*<amd-dependency\s+path\s*=\s*)('|")(.+?)\2.*?\/>/;
-        this.importRequireRegex = /^import\s*(\w*)\s*=\s*require\((?:'|")(\S*)(?:'|")\.*\)/;
-        this.es6importRegex = /^import.*from.*/;
-        this.todoRegex = new RegExp('(BUG|TODO|FIXME|CHANGED|XXX|IDEA|HACK|NOTE)');
+        }) || this;
+        _this.registry = registry;
+        _this.trailingWhiteSpaceLength = 0;
+        _this.classifier = ts.createClassifier();
+        _this.fullTripleSlashReferencePathRegEx = /^(\/\/\/\s*<reference\s+path\s*=\s*)('|")(.+?)\2.*?\/>/;
+        _this.fullTripleSlashAMDNameRegEx = /^(\/\/\/\s*<amd-module\s+name\s*=\s*)('|")(.+?)\2.*?\/>/;
+        _this.fullTripleSlashAMDDependencyPathRegEx = /^(\/\/\/\s*<amd-dependency\s+path\s*=\s*)('|")(.+?)\2.*?\/>/;
+        _this.importRequireRegex = /^import\s*(\w*)\s*=\s*require\((?:'|")(\S*)(?:'|")\.*\)/;
+        _this.es6importRegex = /^import.*from.*/;
+        _this.todoRegex = new RegExp('(BUG|TODO|FIXME|CHANGED|XXX|IDEA|HACK|NOTE)');
+        return _this;
     }
     TypeScriptSemanticGrammar.prototype.tokenizeLine = function (line, ruleStack, firstLine) {
         if (firstLine === void 0) { firstLine = false; }
@@ -40,10 +37,10 @@ var TypeScriptSemanticGrammar = (function (_super) {
         else {
             this.trailingWhiteSpaceLength = 0;
         }
-        var finalLexState = firstLine ? 0
+        var finalLexState = firstLine ? ts.EndOfLineState.None
             : ruleStack && ruleStack.length ? ruleStack[0]
-                : 0;
-        if (finalLexState !== 0) {
+                : ts.EndOfLineState.None;
+        if (finalLexState !== ts.EndOfLineState.None) {
             return this.getAtomTokensForLine(line, finalLexState);
         }
         if (line.match(this.fullTripleSlashReferencePathRegEx)) {
@@ -128,7 +125,7 @@ var TypeScriptSemanticGrammar = (function (_super) {
     };
     TypeScriptSemanticGrammar.prototype.getTsTokensForLine = function (line, finalLexState) {
         var _this = this;
-        if (finalLexState === void 0) { finalLexState = 0; }
+        if (finalLexState === void 0) { finalLexState = ts.EndOfLineState.None; }
         var output = this.classifier.getClassificationsForLine(line, finalLexState, true);
         var ruleStack = [output.finalLexState];
         var classificationResults = output.entries;
@@ -142,7 +139,7 @@ var TypeScriptSemanticGrammar = (function (_super) {
             var style = getAtomStyleForToken(info, str);
             if (style == 'comment.block') {
                 var toret = [];
-                var match;
+                var match = void 0;
                 while (match = _this.todoRegex.exec(str)) {
                     var start = match.index;
                     var length = match[1].length;
@@ -172,7 +169,7 @@ var TypeScriptSemanticGrammar = (function (_super) {
         return { tokens: tokens, ruleStack: tsTokensWithRuleStack.ruleStack };
     };
     return TypeScriptSemanticGrammar;
-})(AtomTSBaseGrammar);
+}(AtomTSBaseGrammar));
 exports.TypeScriptSemanticGrammar = TypeScriptSemanticGrammar;
 function getAtomStyleForToken(token, str) {
     switch (token.classification) {

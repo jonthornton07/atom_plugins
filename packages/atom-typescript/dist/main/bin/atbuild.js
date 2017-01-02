@@ -1,6 +1,4 @@
-/**
- * This file is a work in progress
- */
+"use strict";
 var makeTypeScriptGlobal_1 = require("../../typescript/makeTypeScriptGlobal");
 makeTypeScriptGlobal_1.makeTsGlobal();
 var tsconfig = require("../tsconfig/tsconfig");
@@ -21,6 +19,7 @@ var errors = utils_1.selectMany(proj.projectFile.project.files.map(function (fil
     var output = building.emitFile(proj, filePath);
     return output.errors;
 }));
+building.emitDts(proj);
 if (errors.length == 0) {
     console.log('Compile successfull');
     process.exit(0);

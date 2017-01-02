@@ -1,8 +1,7 @@
-/// <reference path='../../globals'/>
-var parent = require('../../worker/parent');
-var atomConfig = require('./atomConfig');
-var fs = require('fs');
-var atomUtils = require('./atomUtils');
+"use strict";
+var parent = require("../../worker/parent");
+var fs = require("fs");
+var atomUtils = require("./atomUtils");
 var fuzzaldrin = require('fuzzaldrin');
 var CSON = require("season");
 var explicitlyTriggered = false;
@@ -11,29 +10,21 @@ function triggerAutocompletePlus() {
     explicitlyTriggered = true;
 }
 exports.triggerAutocompletePlus = triggerAutocompletePlus;
-var tsSnipPrefixLookup = Object.create(null);
-function loadSnippets() {
-    var confPath = atom.getConfigDirPath();
-    CSON.readFile(confPath + "/packages/atom-typescript/snippets/typescript-snippets.cson", function (err, snippetsRoot) {
-        if (err)
-            return;
-        if (!snippetsRoot || !snippetsRoot['.source.ts'])
-            return;
-        var tsSnippets = snippetsRoot['.source.ts'];
-        for (var snippetName in tsSnippets) {
-            if (tsSnippets.hasOwnProperty(snippetName)) {
-                tsSnipPrefixLookup[tsSnippets[snippetName].prefix] = {
-                    body: tsSnippets[snippetName].body,
-                    name: snippetName
-                };
-            }
-        }
-    });
+function getModuleAutocompleteType(scopes) {
+    function has(match) {
+        return scopes.some(function (scope) { return scope.indexOf(match) !== -1; });
+    }
+    var isString = has('string.quoted');
+    return {
+        isReference: has('reference.path.string.quoted') || has('amd.path.string.quoted'),
+        isRequire: has('meta.import-equals.external') && isString,
+        isImport: has('meta.import') && isString
+    };
 }
-loadSnippets();
 exports.provider = {
-    selector: '.source.ts',
+    selector: '.source.ts, .source.tsx',
     inclusionPriority: 3,
+    suggestionPriority: 3,
     excludeLowerPriority: false,
     getSuggestions: function (options) {
         var filePath = options.editor.getPath();
@@ -41,35 +32,25 @@ exports.provider = {
             return Promise.resolve([]);
         if (!fs.existsSync(filePath))
             return Promise.resolve([]);
-        var pathMatchers = ['reference.path.string', 'require.path.string', 'es6import.path.string'];
-        var lastScope = options.scopeDescriptor.scopes[options.scopeDescriptor.scopes.length - 1];
-        if (pathMatchers.some(function (p) { return lastScope === p; })) {
-            return parent.getRelativePathsInProject({ filePath: filePath, prefix: options.prefix, includeExternalModules: lastScope !== 'reference.path.string' })
+        var _a = getModuleAutocompleteType(options.scopeDescriptor.scopes), isReference = _a.isReference, isRequire = _a.isRequire, isImport = _a.isImport;
+        if (isReference || isRequire || isImport) {
+            return parent.getRelativePathsInProject({ filePath: filePath, prefix: options.prefix, includeExternalModules: isReference })
                 .then(function (resp) {
+                var range = options.editor.bufferRangeForScopeAtCursor(".string.quoted");
+                var cursor = options.editor.getCursorBufferPosition();
+                if (!range || cursor.column !== range.end.column - 1) {
+                    return [];
+                }
+                var content = options.editor.getTextInBufferRange(range).replace(/^['"]|['"]$/g, "");
                 return resp.files.map(function (file) {
                     var relativePath = file.relativePath;
                     var suggestionText = relativePath;
                     var suggestion = {
                         text: suggestionText,
-                        replacementPrefix: resp.endsInPunctuation ? '' : options.prefix,
+                        replacementPrefix: content,
                         rightLabelHTML: '<span>' + file.name + '</span>',
-                        type: 'path'
+                        type: 'import'
                     };
-                    if (lastScope == 'reference.path.string') {
-                        suggestion.atomTS_IsReference = {
-                            relativePath: relativePath
-                        };
-                    }
-                    if (lastScope == 'require.path.string') {
-                        suggestion.atomTS_IsImport = {
-                            relativePath: relativePath
-                        };
-                    }
-                    if (lastScope == 'es6import.path.string') {
-                        suggestion.atomTS_IsES6Import = {
-                            relativePath: relativePath
-                        };
-                    }
                     return suggestion;
                 });
             });
@@ -79,7 +60,8 @@ exports.provider = {
                 explicitlyTriggered = false;
             }
             else {
-                if (options.prefix && options.prefix.trim() == ';') {
+                var prefix = options.prefix.trim();
+                if (prefix === '' || prefix === ';' || prefix === '{') {
                     return Promise.resolve([]);
                 }
             }
@@ -102,12 +84,12 @@ exports.provider = {
                     }
                     else {
                         var prefix = options.prefix;
-                        if (c.name.startsWith('$')) {
+                        if (c.name && c.name.startsWith('$')) {
                             prefix = "$" + prefix;
                         }
                         return {
                             text: c.name,
-                            replacementPrefix: resp.endsInPunctuation ? '' : prefix,
+                            replacementPrefix: resp.endsInPunctuation ? '' : prefix.trim(),
                             rightLabel: c.display,
                             leftLabel: c.kind,
                             type: atomUtils.kindToType(c.kind),
@@ -115,48 +97,9 @@ exports.provider = {
                         };
                     }
                 });
-                if (tsSnipPrefixLookup[options.prefix]) {
-                    var suggestion = {
-                        snippet: tsSnipPrefixLookup[options.prefix].body,
-                        replacementPrefix: options.prefix,
-                        rightLabelHTML: "snippet: " + options.prefix,
-                        type: 'snippet'
-                    };
-                    suggestions.unshift(suggestion);
-                }
                 return suggestions;
             });
             return promisedSuggestions;
         }
     },
-    onDidInsertSuggestion: function (options) {
-        if (options.suggestion.atomTS_IsReference
-            || options.suggestion.atomTS_IsImport
-            || options.suggestion.atomTS_IsES6Import) {
-            var quote = (/["']/.exec(atomConfig.preferredQuoteCharacter) || [''])[0];
-            if (options.suggestion.atomTS_IsReference) {
-                options.editor.moveToBeginningOfLine();
-                options.editor.selectToEndOfLine();
-                options.editor.replaceSelectedText(null, function () { return '/// <reference path="' + options.suggestion.atomTS_IsReference.relativePath + '.ts"/>'; });
-            }
-            if (options.suggestion.atomTS_IsImport) {
-                options.editor.moveToBeginningOfLine();
-                options.editor.selectToEndOfLine();
-                var groups = /^\s*import\s*(\w*)\s*=\s*require\s*\(\s*(["'])/.exec(options.editor.getSelectedText());
-                var alias = groups[1];
-                quote = quote || groups[2];
-                options.editor.replaceSelectedText(null, function () { return "import " + alias + " = require(" + quote + options.suggestion.atomTS_IsImport.relativePath + quote + ");"; });
-            }
-            if (options.suggestion.atomTS_IsES6Import) {
-                var row = options.editor.getCursorBufferPosition().row;
-                var originalText = options.editor.lineTextForBufferRow(row);
-                var groups = /(.*)from\s*(["'])/.exec(originalText);
-                var beforeFrom = groups[1];
-                quote = quote || groups[2];
-                var newTextAfterFrom = "from " + quote + options.suggestion.atomTS_IsES6Import.relativePath + quote + ";";
-                options.editor.setTextInBufferRange([[row, beforeFrom.length], [row, originalText.length]], newTextAfterFrom);
-            }
-            options.editor.moveToEndOfLine();
-        }
-    }
 };

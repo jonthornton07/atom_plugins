@@ -1,3 +1,4 @@
+"use strict";
 var ast = require("../astUtils");
 var os_1 = require("os");
 function getIdentifierAndClassNames(error) {
@@ -28,7 +29,7 @@ var AddClassMethod = (function () {
         var relevantError = info.positionErrors.filter(function (x) { return x.code == ts.Diagnostics.Property_0_does_not_exist_on_type_1.code; })[0];
         if (!relevantError)
             return;
-        if (info.positionNode.kind !== 66)
+        if (info.positionNode.kind !== ts.SyntaxKind.Identifier)
             return;
         var match = getIdentifierAndClassNames(relevantError);
         if (!match)
@@ -43,24 +44,24 @@ var AddClassMethod = (function () {
         var className = getIdentifierAndClassNames(relevantError).className;
         var typeString = 'any';
         var parentOfParent = identifier.parent.parent;
-        if (parentOfParent.kind == 178
+        if (parentOfParent.kind == ts.SyntaxKind.BinaryExpression
             && parentOfParent.operatorToken.getText().trim() == '=') {
             var binaryExpression = parentOfParent;
             typeString = getTypeStringForNode(binaryExpression.right, info.typeChecker);
         }
-        else if (parentOfParent.kind == 165) {
-            var nativeTypes = ['string', 'number', 'boolean', 'object', 'null', 'undefined', 'RegExp'];
-            var abc = 'abcdefghijklmnopqrstuvwxyz';
-            var argsAlphabet = abc.split('');
-            var argsAlphabetPosition = 0;
-            var argName = '';
-            var argCount = 0;
+        else if (parentOfParent.kind == ts.SyntaxKind.CallExpression) {
+            var nativeTypes_1 = ['string', 'number', 'boolean', 'object', 'null', 'undefined', 'RegExp'];
+            var abc_1 = 'abcdefghijklmnopqrstuvwxyz';
+            var argsAlphabet_1 = abc_1.split('');
+            var argsAlphabetPosition_1 = 0;
+            var argName_1 = '';
+            var argCount_1 = 0;
             var callExp = parentOfParent;
             var typeStringParts = ['('];
-            var args = [];
+            var args_1 = [];
             callExp.arguments.forEach(function (arg) {
                 var argType = getTypeStringForNode(arg, info.typeChecker);
-                if (nativeTypes.indexOf(argType) != -1
+                if (nativeTypes_1.indexOf(argType) != -1
                     || argType.indexOf('{') != -1
                     || argType.indexOf('=>') != -1
                     || argType.indexOf('[]') != -1) {
@@ -82,60 +83,60 @@ var AddClassMethod = (function () {
                         !isAnonymousObject) {
                         if (typeName == 'Array')
                             typeName = 'array';
-                        argName = "" + typeName + argCount++;
+                        argName_1 = "" + typeName + argCount_1++;
                     }
                     else if (argType.indexOf('[]') != -1) {
-                        argName = "array" + argCount++;
+                        argName_1 = "array" + argCount_1++;
                     }
                     else {
                         if (isAnonymousMethod) {
                             typeName = "function";
-                            argName = "" + typeName + argCount++;
+                            argName_1 = "" + typeName + argCount_1++;
                         }
                         else if (isAnonymousObject) {
                             typeName = "object";
-                            argName = "" + typeName + argCount++;
+                            argName_1 = "" + typeName + argCount_1++;
                         }
                         else {
-                            argName = argsAlphabet[argsAlphabetPosition];
-                            argsAlphabet[argsAlphabetPosition] += argsAlphabet[argsAlphabetPosition].substring(1);
-                            argsAlphabetPosition++;
-                            argsAlphabetPosition %= abc.length;
+                            argName_1 = argsAlphabet_1[argsAlphabetPosition_1];
+                            argsAlphabet_1[argsAlphabetPosition_1] += argsAlphabet_1[argsAlphabetPosition_1].substring(1);
+                            argsAlphabetPosition_1++;
+                            argsAlphabetPosition_1 %= abc_1.length;
                         }
                     }
                 }
                 else {
-                    argName = argType.replace('typeof ', '');
+                    argName_1 = argType.replace('typeof ', '');
                     if (argType.indexOf('typeof ') == -1) {
-                        var firstLower = argName[0].toLowerCase();
-                        if (argName.length == 1) {
-                            argName = firstLower;
+                        var firstLower = argName_1[0].toLowerCase();
+                        if (argName_1.length == 1) {
+                            argName_1 = firstLower;
                         }
                         else {
-                            argName = firstLower + argName.substring(1);
+                            argName_1 = firstLower + argName_1.substring(1);
                         }
                     }
-                    argName += argCount.toString();
-                    argCount++;
+                    argName_1 += argCount_1.toString();
+                    argCount_1++;
                 }
                 if (argType.indexOf('null') != -1 || argType.indexOf('undefined') != -1) {
                     argType = argType.replace(/null|undefined/g, 'any');
                 }
-                args.push(argName + ": " + argType);
+                args_1.push(argName_1 + ": " + argType);
             });
-            typeStringParts.push(args.join(', '));
+            typeStringParts.push(args_1.join(', '));
             typeStringParts.push("): any { }");
             typeString = typeStringParts.join('');
         }
-        var memberTarget = ast.getNodeByKindAndName(info.program, 211, className);
+        var memberTarget = ast.getNodeByKindAndName(info.program, ts.SyntaxKind.ClassDeclaration, className);
         if (!memberTarget) {
-            memberTarget = ast.getNodeByKindAndName(info.program, 212, className);
+            memberTarget = ast.getNodeByKindAndName(info.program, ts.SyntaxKind.InterfaceDeclaration, className);
         }
         if (!memberTarget) {
             return [];
         }
         var targetDeclaration = memberTarget;
-        var firstBrace = targetDeclaration.getChildren().filter(function (x) { return x.kind == 14; })[0];
+        var firstBrace = targetDeclaration.getChildren().filter(function (x) { return x.kind == ts.SyntaxKind.OpenBraceToken; })[0];
         var indentLength = info.service.getIndentationAtPosition(memberTarget.getSourceFile().fileName, firstBrace.end, info.project.projectFile.project.formatCodeOptions);
         var indent = Array(indentLength + info.project.projectFile.project.formatCodeOptions.IndentSize + 1).join(' ');
         var refactoring = {
@@ -149,5 +150,5 @@ var AddClassMethod = (function () {
         return [refactoring];
     };
     return AddClassMethod;
-})();
+}());
 exports.AddClassMethod = AddClassMethod;

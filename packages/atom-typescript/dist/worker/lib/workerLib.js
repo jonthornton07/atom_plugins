@@ -1,12 +1,13 @@
+"use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-var childprocess = require('child_process');
+var childprocess = require("child_process");
 var exec = childprocess.exec;
 var spawn = childprocess.spawn;
-var path = require('path');
+var path = require("path");
 function createId() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -17,7 +18,6 @@ var orphanExitCode = 100;
 var RequesterResponder = (function () {
     function RequesterResponder() {
         var _this = this;
-        this.getProcess = function () { throw new Error('getProcess is abstract'); return null; };
         this.currentListeners = {};
         this.currentLastOfType = {};
         this.pendingRequests = [];
@@ -30,12 +30,13 @@ var RequesterResponder = (function () {
             if (!_this.currentListeners[message])
                 _this.currentListeners[message] = {};
             var id = createId();
-            var defer = Promise.defer();
-            _this.currentListeners[message][id] = defer;
+            var promise = new Promise(function (resolve, reject) {
+                _this.currentListeners[message][id] = { resolve: resolve, reject: reject, promise: promise };
+            });
             _this.pendingRequests.push(message);
             _this.pendingRequestsChanged(_this.pendingRequests);
             _this.getProcess().send({ message: message, id: id, data: data, request: true });
-            return defer.promise;
+            return promise;
         };
         this.responders = {};
         this.processRequest = function (m) {
@@ -74,7 +75,7 @@ var RequesterResponder = (function () {
     }
     RequesterResponder.prototype.processResponse = function (m) {
         var parsed = m;
-        this.pendingRequests.pop();
+        this.pendingRequests.shift();
         this.pendingRequestsChanged(this.pendingRequests);
         if (!parsed.message || !parsed.id) {
             console.log('PARENT ERR: Invalid JSON data from child:', m);
@@ -93,10 +94,10 @@ var RequesterResponder = (function () {
             }
             delete this.currentListeners[parsed.message][parsed.id];
             if (this.currentLastOfType[parsed.message]) {
-                var last = this.currentLastOfType[parsed.message];
+                var last_1 = this.currentLastOfType[parsed.message];
                 delete this.currentLastOfType[parsed.message];
-                var lastPromise = this.sendToIpcHeart(last.data, parsed.message);
-                lastPromise.then(function (res) { return last.defer.resolve(res); }, function (rej) { return last.defer.reject(rej); });
+                var lastPromise = this.sendToIpcHeart(last_1.data, parsed.message);
+                lastPromise.then(function (res) { return last_1.defer.resolve(res); }, function (rej) { return last_1.defer.reject(rej); });
             }
         }
     };
@@ -120,12 +121,13 @@ var RequesterResponder = (function () {
                 if (_this.currentLastOfType[message]) {
                     _this.currentLastOfType[message].defer.resolve(defaultResponse);
                 }
-                var defer = Promise.defer();
-                _this.currentLastOfType[message] = {
-                    data: data,
-                    defer: defer
-                };
-                return defer.promise;
+                var promise_1 = new Promise(function (resolve, reject) {
+                    _this.currentLastOfType[message] = {
+                        data: data,
+                        defer: { promise: promise_1, resolve: resolve, reject: reject }
+                    };
+                });
+                return promise_1;
             }
         };
     };
@@ -139,23 +141,29 @@ var RequesterResponder = (function () {
             .forEach(function (funcName) { return _this.addToResponders(aModule[funcName]); });
     };
     return RequesterResponder;
-})();
+}());
 var Parent = (function (_super) {
     __extends(Parent, _super);
     function Parent() {
-        var _this = this;
-        _super.apply(this, arguments);
-        this.node = process.execPath;
-        this.gotENOENTonSpawnNode = false;
-        this.getProcess = function () { return _this.child; };
-        this.stopped = false;
+        var _this = _super.apply(this, arguments) || this;
+        _this.node = process.execPath;
+        _this.gotENOENTonSpawnNode = false;
+        _this.getProcess = function () { return _this.child; };
+        _this.stopped = false;
+        return _this;
     }
     Parent.prototype.startWorker = function (childJsPath, terminalError, customArguments) {
         var _this = this;
         try {
+            var spawnEnv = (process.platform === 'linux') ? Object.create(process.env) : {};
+            spawnEnv['ELECTRON_RUN_AS_NODE'] = 1;
             this.child = spawn(this.node, [
                 childJsPath
-            ].concat(customArguments), { cwd: path.dirname(childJsPath), env: { ATOM_SHELL_INTERNAL_RUN_AS_NODE: '1' }, stdio: ['ipc'] });
+            ].concat(customArguments), {
+                cwd: path.dirname(childJsPath),
+                env: spawnEnv,
+                stdio: ['ipc']
+            });
             this.child.on('error', function (err) {
                 if (err.code === "ENOENT" && err.path === _this.node) {
                     _this.gotENOENTonSpawnNode = true;
@@ -207,15 +215,14 @@ var Parent = (function (_super) {
         this.child = null;
     };
     return Parent;
-})(RequesterResponder);
+}(RequesterResponder));
 exports.Parent = Parent;
 var Child = (function (_super) {
     __extends(Child, _super);
     function Child() {
-        var _this = this;
-        _super.call(this);
-        this.getProcess = function () { return process; };
-        this.keepAlive();
+        var _this = _super.call(this) || this;
+        _this.getProcess = function () { return process; };
+        _this.keepAlive();
         process.on('message', function (message) {
             if (message.request) {
                 _this.processRequest(message);
@@ -224,6 +231,7 @@ var Child = (function (_super) {
                 _this.processResponse(message);
             }
         });
+        return _this;
     }
     Child.prototype.keepAlive = function () {
         setInterval(function () {
@@ -233,5 +241,5 @@ var Child = (function (_super) {
         }, 1000);
     };
     return Child;
-})(RequesterResponder);
+}(RequesterResponder));
 exports.Child = Child;

@@ -1,9 +1,10 @@
+"use strict";
 var QuotesToQuotes = (function () {
     function QuotesToQuotes() {
         this.key = QuotesToQuotes.name;
     }
     QuotesToQuotes.prototype.canProvideFix = function (info) {
-        if (info.positionNode.kind === 8) {
+        if (info.positionNode.kind === ts.SyntaxKind.StringLiteral) {
             if (info.positionNode.getText().trim()[0] === "'") {
                 return { display: "Convert ' to \"" };
             }
@@ -34,5 +35,5 @@ var QuotesToQuotes = (function () {
         return [refactoring];
     };
     return QuotesToQuotes;
-})();
+}());
 exports.QuotesToQuotes = QuotesToQuotes;

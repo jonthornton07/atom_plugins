@@ -1,14 +1,15 @@
+"use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-var view = require('./view');
+var view = require("./view");
 var $ = view.$;
 var AwesomePanelView = (function (_super) {
     __extends(AwesomePanelView, _super);
     function AwesomePanelView() {
-        _super.apply(this, arguments);
+        return _super.apply(this, arguments) || this;
     }
     AwesomePanelView.content = function () {
         var _this = this;
@@ -18,7 +19,7 @@ var AwesomePanelView = (function (_super) {
         this.something.html('<div>tada</div>');
     };
     return AwesomePanelView;
-})(view.View);
+}(view.View));
 exports.AwesomePanelView = AwesomePanelView;
 function attach() {
     exports.panelView = new AwesomePanelView({});

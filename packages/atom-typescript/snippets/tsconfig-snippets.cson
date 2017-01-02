@@ -3,7 +3,8 @@
         'prefix': 'fg'
         'body': """
             "filesGlob": [
-                "./**/*.ts",
-                "!./node_modules/**/*.ts"
+                "**/*.ts",
+                "**/*.tsx",
+                "!node_modules/**"
             ],
         """

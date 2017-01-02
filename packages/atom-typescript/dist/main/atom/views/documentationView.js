@@ -1,15 +1,17 @@
+"use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-var view = require('./view');
+var view = require("./view");
 var $ = view.$;
 var DocumentationView = (function (_super) {
     __extends(DocumentationView, _super);
     function DocumentationView() {
-        _super.apply(this, arguments);
-        this.shown = false;
+        var _this = _super.apply(this, arguments) || this;
+        _this.shown = false;
+        return _this;
     }
     DocumentationView.content = function () {
         var _this = this;
@@ -46,7 +48,7 @@ var DocumentationView = (function (_super) {
         }
     };
     return DocumentationView;
-})(view.View);
+}(view.View));
 exports.DocumentationView = DocumentationView;
 function attach() {
     if (exports.docView)

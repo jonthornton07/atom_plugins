@@ -1,3 +1,4 @@
+"use strict";
 var os_1 = require("os");
 var displayPartsToString = ts.displayPartsToString, typeToDisplayParts = ts.typeToDisplayParts;
 var getPathCompletions_1 = require("../../modules/getPathCompletions");
@@ -29,7 +30,7 @@ var AddImportStatement = (function () {
         var relevantError = info.positionErrors.filter(function (x) { return x.code == 2304; })[0];
         if (!relevantError)
             return;
-        if (info.positionNode.kind !== 66)
+        if (info.positionNode.kind !== ts.SyntaxKind.Identifier)
             return;
         var matches = getIdentifierAndFileNames(relevantError, info.project);
         if (!matches)
@@ -53,5 +54,5 @@ var AddImportStatement = (function () {
         return refactorings;
     };
     return AddImportStatement;
-})();
+}());
 exports.AddImportStatement = AddImportStatement;

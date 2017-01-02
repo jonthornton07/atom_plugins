@@ -1,7 +1,4 @@
-/**
- * A functional form of the SelectListView
- * Only one of these bad boys is allowed on the screen at one time
- */
+"use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -19,14 +16,15 @@ function simpleSelectionView(options) {
     return singleton;
 }
 exports.simpleSelectionView = simpleSelectionView;
-var sp = require('atom-space-pen-views');
+var sp = require("atom-space-pen-views");
 var $ = sp.$;
 var SimpleSelectListView = (function (_super) {
     __extends(SimpleSelectListView, _super);
     function SimpleSelectListView(options) {
-        _super.call(this);
-        this.options = options;
-        this.panel = null;
+        var _this = _super.call(this) || this;
+        _this.options = options;
+        _this.panel = null;
+        return _this;
     }
     Object.defineProperty(SimpleSelectListView.prototype, "$", {
         get: function () {
@@ -70,5 +68,5 @@ var SimpleSelectListView = (function (_super) {
         this.hide();
     };
     return SimpleSelectListView;
-})(sp.SelectListView);
+}(sp.SelectListView));
 exports.SimpleSelectListView = SimpleSelectListView;

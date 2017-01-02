@@ -1,9 +1,11 @@
 import path = require('path');
 import utils = require('../utils');
 import fs = require('fs');
+import os = require('os')
 import textBuffer = require('basarat-text-buffer');
 
 import tsconfig = require('../../tsconfig/tsconfig');
+import {typescriptServices} from "../typescriptServices";
 
 interface ScriptInfo {
     getFileName(): string;
@@ -79,7 +81,7 @@ function createScriptInfo(fileName: string, text: string, isOpen = false): Scrip
 
         // console.error('initial text:',buffer.getText()==newText);
         // console.error({minChar,limChar,newText:newText.length});
-        // console.error(start,end);        
+        // console.error(start,end);
         buffer.setTextInRange([[start.line, start.col], [end.line, end.col]], newText, {normalizeLineEndings: false});
         // console.error(buffer.getText().length);
         // console.error(JSON.stringify({newText, final:buffer.getText()}));
@@ -199,17 +201,24 @@ function getScriptSnapShot(scriptInfo: ScriptInfo): ts.IScriptSnapshot {
         getText: (start: number, end: number) => textSnapshot.substring(start, end),
         getLength: () => textSnapshot.length,
         getChangeRange: getChangeRange,
-        getLineStartPositions: () => lineStarts,
-        version: version
+    }
+}
+
+function getTypescriptLocation() {
+    if (typescriptServices) {
+        return path.dirname(typescriptServices);
+    }
+    else {
+        return path.dirname(require.resolve('typescript'));
     }
 }
 
 export var getDefaultLibFilePath = (options: ts.CompilerOptions) => {
     var filename = ts.getDefaultLibFileName(options);
-    return (path.join(path.dirname(require.resolve('ntypescript')), filename)).split('\\').join('/');
+    return (path.join(getTypescriptLocation(), filename)).split('\\').join('/');
 }
 
-export var typescriptDirectory = path.dirname(require.resolve('ntypescript')).split('\\').join('/');
+export var typescriptDirectory = getTypescriptLocation().split('\\').join('/');
 
 
 // NOTES:
@@ -224,8 +233,14 @@ export class LanguageServiceHost implements ts.LanguageServiceHost {
 
     constructor(private config: tsconfig.TypeScriptProjectFileDetails) {
         // Add the `lib.d.ts`
-        if (!config.project.compilerOptions.noLib) {
+        if (!config.project.compilerOptions.noLib && !config.project.compilerOptions.lib) {
           this.addScript(getDefaultLibFilePath(config.project.compilerOptions));
+        }
+        else if (Array.isArray(config.project.compilerOptions.lib)) {
+            for (let lib of config.project.compilerOptions.lib) {
+                let filename = "lib." + lib + ".d.ts";
+                this.addScript((path.join(getTypescriptLocation(), filename)).split('\\').join('/'));
+            }
         }
     }
 
@@ -270,7 +285,7 @@ export class LanguageServiceHost implements ts.LanguageServiceHost {
         var script = this.fileNameToScript[fileName];
         if (script) {
             var minChar = script.getPositionFromLine(start.line, start.col);
-            var limChar = script.getPositionFromLine(end.line, end.col);            
+            var limChar = script.getPositionFromLine(end.line, end.col);
             script.editContent(minChar, limChar, newText);
             return;
         }
@@ -330,6 +345,18 @@ export class LanguageServiceHost implements ts.LanguageServiceHost {
     ////////////////////////////////////////
 
     getCompilationSettings = () => this.config.project.compilerOptions;
+    getNewLine = () => {
+        let eol = os.EOL;
+        switch (this.config.project.compilerOptions.newLine) {
+            case ts.NewLineKind.CarriageReturnLineFeed:
+                eol = "\r\n";
+                break;
+            case ts.NewLineKind.LineFeed:
+                eol = "\n";
+                break;
+        }
+        return eol;
+    }
     getScriptFileNames = (): string[]=> Object.keys(this.fileNameToScript);
     getScriptVersion = (fileName: string): string => {
         var script = this.fileNameToScript[fileName];
@@ -351,7 +378,7 @@ export class LanguageServiceHost implements ts.LanguageServiceHost {
             return getScriptSnapShot(script);
         }
         // This script should be a part of the project if it exists
-        else if(fs.existsSync(fileName)){
+        else if(this.fileExists(fileName)){
             this.config.project.files.push(fileName);
             this.addScript(fileName);
             return this.getScriptSnapshot(fileName);
@@ -362,4 +389,13 @@ export class LanguageServiceHost implements ts.LanguageServiceHost {
         return this.config.projectFileDirectory;
     }
     getDefaultLibFileName = ts.getDefaultLibFileName;
+
+    fileExists = (path: string) => {
+        try {
+            const stat = fs.statSync(path)
+            return stat.isFile()
+        } catch (error) {
+            return false
+        }
+    }
 }

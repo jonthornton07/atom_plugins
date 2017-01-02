@@ -1,7 +1,4 @@
-// Sample implementation of a react view
-// DOCS: 
-// http://facebook.github.io/react/blog/2015/01/27/react-v0.13.0-beta-1.html#es6-classes
-// https://facebook.github.io/react/docs/component-specs.html
+"use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -9,16 +6,16 @@ var __extends = (this && this.__extends) || function (d, b) {
 };
 var atomUtils_1 = require("../atomUtils");
 var sp = require("atom-space-pen-views");
-var React = require('react');
+var React = require("react");
 var MyComponent = (function (_super) {
     __extends(MyComponent, _super);
     function MyComponent(props) {
-        var _this = this;
-        _super.call(this, props);
-        this.state = { count: 0 };
-        this.stop = function () {
+        var _this = _super.call(this, props) || this;
+        _this.state = { count: 0 };
+        _this.stop = function () {
             clearInterval(_this.interval);
         };
+        return _this;
     }
     MyComponent.prototype.componentDidMount = function () {
         var _this = this;
@@ -27,21 +24,23 @@ var MyComponent = (function (_super) {
         });
     };
     MyComponent.prototype.render = function () {
-        return React.createElement("div", {"onClick": this.stop}, "This is a test: ", this.state.count);
+        return React.createElement("div", { onClick: this.stop },
+            "This is a test: ",
+            this.state.count);
     };
-    MyComponent.defaultProps = { count: 0 };
     return MyComponent;
-})(React.Component);
+}(React.Component));
+MyComponent.defaultProps = { count: 0 };
 var RView = (function (_super) {
     __extends(RView, _super);
     function RView(config) {
-        var _this = this;
-        _super.call(this);
-        this.config = config;
-        this.getURI = function () { return atomUtils_1.uriForPath(_this.constructor.protocol, _this.config.filePath); };
-        this.getTitle = function () { return _this.config.title; };
-        this.getIconName = function () { return _this.config.icon; };
-        React.render(React.createElement(MyComponent, {}), this.rootDomElement);
+        var _this = _super.call(this) || this;
+        _this.config = config;
+        _this.getURI = function () { return atomUtils_1.uriForPath(_this.constructor.protocol, _this.config.filePath); };
+        _this.getTitle = function () { return _this.config.title; };
+        _this.getIconName = function () { return _this.config.icon; };
+        React.render(React.createElement(MyComponent, {}), _this.rootDomElement);
+        return _this;
     }
     Object.defineProperty(RView.prototype, "rootDomElement", {
         get: function () {
@@ -52,8 +51,8 @@ var RView = (function (_super) {
     });
     RView.content = function () {
         var _this = this;
-        return this.div({ class: 'atomts-r-view native-key-bindings' }, function () {
-            _this.div({ outlet: 'mainContent' });
+        return this.div({ class: 'atomts atomts-r-view native-key-bindings' }, function () {
+            _this.div({ outlet: 'mainContent layout' });
         });
     };
     Object.defineProperty(RView.prototype, "$", {
@@ -61,7 +60,7 @@ var RView = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    RView.protocol = 'atomtsview:';
     return RView;
-})(sp.ScrollView);
+}(sp.ScrollView));
+RView.protocol = 'atomtsview:';
 exports.RView = RView;

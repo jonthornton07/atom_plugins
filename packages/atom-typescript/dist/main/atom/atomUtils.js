@@ -1,8 +1,9 @@
-var path = require('path');
-var fs = require('fs');
+"use strict";
+var path = require("path");
+var fs = require("fs");
 var fsu = require("../utils/fsUtil");
-var _atom = require('atom');
-var url = require('url');
+var _atom = require("atom");
+var url = require("url");
 function getEditorPosition(editor) {
     var bufferPos = editor.getCursorBufferPosition();
     return getEditorPositionForBufferPosition(editor, bufferPos);
@@ -17,6 +18,11 @@ function isAllowedExtension(ext) {
     return (ext == '.ts' || ext == '.tst' || ext == '.tsx');
 }
 exports.isAllowedExtension = isAllowedExtension;
+function isActiveEditorOnDiskAndTs() {
+    var editor = atom.workspace.getActiveTextEditor();
+    return onDiskAndTs(editor);
+}
+exports.isActiveEditorOnDiskAndTs = isActiveEditorOnDiskAndTs;
 function onDiskAndTs(editor) {
     if (editor instanceof require('atom').TextEditor) {
         var filePath = editor.getPath();
@@ -33,6 +39,25 @@ function onDiskAndTs(editor) {
     return false;
 }
 exports.onDiskAndTs = onDiskAndTs;
+function onDiskAndTsRelated(editor) {
+    if (editor instanceof require('atom').TextEditor) {
+        var filePath = editor.getPath();
+        if (!filePath) {
+            return false;
+        }
+        var ext = path.extname(filePath);
+        if (isAllowedExtension(ext)) {
+            if (fs.existsSync(filePath)) {
+                return true;
+            }
+        }
+        if (filePath.endsWith('tsconfig.json')) {
+            return true;
+        }
+    }
+    return false;
+}
+exports.onDiskAndTsRelated = onDiskAndTsRelated;
 function getFilePathPosition() {
     var editor = atom.workspace.getActiveTextEditor();
     var filePath = editor.getPath();
@@ -204,6 +229,23 @@ function triggerLinter() {
     atom.commands.dispatch(atom.views.getView(atom.workspace.getActiveTextEditor()), 'linter:lint');
 }
 exports.triggerLinter = triggerLinter;
+function getFilePathRelativeToAtomProject(filePath) {
+    filePath = fsu.consistentPath(filePath);
+    return '~' + atom.project.relativize(filePath);
+}
+exports.getFilePathRelativeToAtomProject = getFilePathRelativeToAtomProject;
+function openFile(filePath, position) {
+    if (position === void 0) { position = {}; }
+    var config = {};
+    if (position.line) {
+        config.initialLine = position.line - 1;
+    }
+    if (position.col) {
+        config.initialColumn = position.col;
+    }
+    atom.workspace.open(filePath, config);
+}
+exports.openFile = openFile;
 var _snippetsManager;
 function _setSnippetsManager(snippetsManager) {
     _snippetsManager = snippetsManager;

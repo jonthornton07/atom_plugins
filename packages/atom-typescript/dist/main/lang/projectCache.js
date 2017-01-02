@@ -1,9 +1,10 @@
+"use strict";
 var fs = require("fs");
 var path = require("path");
 var tsconfig = require("../tsconfig/tsconfig");
 var project_1 = require("./core/project");
 var fsu = require("../utils/fsUtil");
-var queryParent = require('../../worker/queryParent');
+var queryParent = require("../../worker/queryParent");
 exports.queryParent = queryParent;
 var child;
 function fixChild(childInjected) {
@@ -32,7 +33,7 @@ function watchProjectFileIfNotDoingItAlready(projectFilePath) {
     if (watchingProjectFile[projectFilePath])
         return;
     watchingProjectFile[projectFilePath] = true;
-    fs.watch(projectFilePath, { persistent: false, recursive: false }, function () {
+    fs.watch(projectFilePath, { persistent: false }, function () {
         if (!fs.existsSync(projectFilePath)) {
             var project = projectByProjectFilePath[projectFilePath];
             if (project) {

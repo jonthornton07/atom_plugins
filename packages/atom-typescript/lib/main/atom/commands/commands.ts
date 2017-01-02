@@ -5,10 +5,10 @@ import autoCompleteProvider = require("../autoCompleteProvider");
 import path = require('path');
 import documentationView = require("../views/documentationView");
 import renameView = require("../views/renameView");
-var apd = require('atom-package-dependencies');
 import contextView = require("../views/contextView");
 import fileSymbolsView = require("../views/fileSymbolsView");
 import projectSymbolsView = require("../views/projectSymbolsView");
+import {create as createTypeOverlay} from "../views/typeOverlayView";
 import gotoHistory = require("../gotoHistory");
 import utils = require("../../lang/utils");
 import {panelView} from "../views/mainPanelView";
@@ -24,6 +24,9 @@ import escapeHtml = require('escape-html');
 import * as rView from "../views/rView";
 import {$} from "atom-space-pen-views";
 import {registerReactCommands} from "./reactCommands";
+import {getFileStatus} from "../fileStatusCache";
+import {registerJson2dtsCommands} from "./json2dtsCommands";
+import * as semanticView from "../views/semanticView";
 
 // Load all the web components
 export * from "../components/componentRegistry";
@@ -34,6 +37,7 @@ export function registerCommands() {
     outputFileCommands.register();
     registerRenameHandling();
     registerReactCommands();
+    registerJson2dtsCommands();
 
     function applyRefactorings(refactorings: RefactoringsByFilePath) {
         var paths = atomUtils.getOpenTypeScritEditorsConsistentPaths();
@@ -99,6 +103,21 @@ export function registerCommands() {
 
         parent.build({ filePath: filePath }).then((resp) => {
             buildView.setBuildOutput(resp.buildOutput);
+
+            resp.tsFilesWithValidEmit.forEach((tsFile) => {
+                let status = getFileStatus(tsFile);
+                status.emitDiffers = false;
+            });
+
+            // Emit never fails with an emit error, so it's probably always gonna be an empty array
+            // It's here just in case something changes in TypeScript compiler
+            resp.tsFilesWithInvalidEmit.forEach((tsFile) => {
+                let status = getFileStatus(tsFile);
+                status.emitDiffers = true;
+            });
+
+            // Update the status of the file in the current editor
+            panelView.updateFileStatus(filePath);
         });
     });
 
@@ -172,7 +191,7 @@ export function registerCommands() {
         autoCompleteProvider.triggerAutocompletePlus();
     });
 
-    atom.commands.add('atom-text-editor', 'typescript:bas-development-testing', (e) => {
+    atom.commands.add('atom-workspace', 'typescript:bas-development-testing', (e) => {
         // documentationView.docView.hide();
         // documentationView.docView.autoPosition();
         // documentationView.testDocumentationView();
@@ -182,17 +201,31 @@ export function registerCommands() {
         //     // console.log(JSON.stringify({txt:res.text}))
         // });
 
-        // atom.commands.dispatch(
+        // atom.commands.dispatch
         //     atom.views.getView(atom.workspace.getActiveTextEditor()),
         //     'typescript:dependency-view');
-        //     
+        //
+        /*atom.commands.dispatch(
+            atom.views.getView(atom.workspace.getActiveTextEditor()),
+            'typescript:testing-r-view');*/
+
+        // atom.commands.dispatch(
+        //     atom.views.getView(atom.workspace.getActiveTextEditor()),
+        //     'typescript:toggle-semantic-view');
+
         atom.commands.dispatch(
             atom.views.getView(atom.workspace.getActiveTextEditor()),
-            'typescript:testing-r-view');
+            'typescript:dependency-view');
 
         // parent.getAST({ filePath: atom.workspace.getActiveEditor().getPath() }).then((res) => {
         //     console.log(res.root);
         // });
+    });
+
+    atom.commands.add('atom-workspace', 'typescript:toggle-semantic-view', (e) => {
+        if (!atomUtils.commandForTypeScript(e)) return;
+
+        semanticView.toggle();
     });
 
     atom.commands.add('atom-text-editor', 'typescript:rename-refactor', (e) => {
@@ -288,6 +321,38 @@ export function registerCommands() {
         }
     });
 
+    atom.commands.add('atom-workspace', 'typescript:show-type', (e) => {
+      var editor = atom.workspace.getActiveTextEditor();
+      var editorView = atom.views.getView(editor);
+      var cursor = editor.getLastCursor()
+      var position = atomUtils.getEditorPositionForBufferPosition(editor, cursor.getBufferPosition());
+      var filePath = editor.getPath();
+      parent.quickInfo({ filePath, position }).then((resp) => {
+        if (resp.valid) {
+          var decoration = editor.decorateMarker(cursor.getMarker(), {
+            type: 'overlay',
+            item: createTypeOverlay(resp.name, resp.comment)
+          });
+
+          var onKeydown = (e) => {
+            if (e.keyCode == 27) { // esc
+              destroyTypeOverlay();
+            }
+          };
+          var destroyTypeOverlay = () => {
+            decoration.destroy();
+            cursorListener.dispose();
+            editorView.removeEventListener('blur', destroyTypeOverlay);
+            editorView.removeEventListener('keydown', onKeydown);
+          };
+
+          var cursorListener = editor.onDidChangeCursorPosition(destroyTypeOverlay);
+          editorView.addEventListener('blur', destroyTypeOverlay);
+          editorView.addEventListener('keydown', onKeydown);
+        }
+      });
+    });
+
     atom.commands.add('atom-workspace', 'typescript:go-to-next', (e) => {
         gotoHistory.gotoNext();
     });
@@ -306,8 +371,8 @@ export function registerCommands() {
                 viewForItem: (item) => {
                     return `<div>
                         <span>${atom.project.relativize(item.filePath) }</span>
-                        <div class="pull-right">line: ${item.position.line}</div>
-                        <ts-view>${item.preview}</ts-view>
+                        <div class="pull-right">line: ${item.position.line + 1}</div>
+                        <ts-view>${escapeHtml(item.preview)}</ts-view>
                     <div>`;
                 },
                 filterKey: utils.getName(() => res.references[0].filePath),
@@ -339,7 +404,7 @@ export function registerCommands() {
         (e) => {
             var editor = atom.workspace.getActiveTextEditor();
             if (!editor) return false;
-            if (path.extname(editor.getPath()) !== '.ts') return false;
+            if (path.extname(editor.getPath()) !== '.ts' && path.extname(editor.getPath()) !== '.tsx') return false;
 
 
             // Abort it for others
@@ -468,6 +533,13 @@ export function registerCommands() {
         panelView.softReset();
     });
 
+    atom.commands.add('atom-text-editor', 'typescript:toggle-breakpoint', (e) => {
+        if (!atomUtils.commandForTypeScript(e)) return;
+
+        parent.toggleBreakpoint(atomUtils.getFilePathPosition()).then((res) => {
+            applyRefactorings(res.refactorings);
+        });
+    });
     /// Register autocomplete commands to show documentations
     /*atom.packages.activatePackage('autocomplete-plus').then(() => {
         var autocompletePlus = apd.require('autocomplete-plus');

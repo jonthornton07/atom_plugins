@@ -1,8 +1,15 @@
-provider = require './provider'
-hyperclickProvider = require './hyperclick-provider'
+{CompositeDisposable, Emitter} = require 'atom'
 
+window.DEBUG = false
 module.exports =
   config:
+    useKite:
+      type: 'boolean'
+      default: true
+      order: 0
+      title: 'Use Kite-powered Completions (macOS only)'
+      description: '''Kite is a cloud powered autocomplete engine. It provides
+      significantly more autocomplete suggestions than the local Jedi engine.'''
     showDescriptions:
       type: 'boolean'
       default: true
@@ -93,14 +100,138 @@ module.exports =
       title: 'Output Debug Logs'
       description: '''Select if you would like to see debug information in
       developer tools logs. May slow down your editor.'''
+    showTooltips:
+      type: 'boolean'
+      default: false
+      order: 10
+      title: 'Show Tooltips with information about the object under the cursor'
+      description: '''EXPERIMENTAL FEATURE WHICH IS NOT FINISHED YET.
+      Feedback and ideas are welcome on github.'''
+    suggestionPriority:
+      type: 'integer'
+      default: 3
+      minimum: 0
+      maximum: 99
+      order: 11
+      title: 'Suggestion Priority'
+      description: '''You can use this to set the priority for autocomplete-python
+      suggestions. For example, you can use lower value to give higher priority
+      for snippets completions which has priority of 2.'''
 
-  activate: (state) -> provider.constructor()
+  installation: null
 
-  deactivate: -> provider.dispose()
+  _handleGrammarChangeEvent: (grammar) ->
+    # this should be same with activationHooks names
+    if grammar.packageName in ['language-python', 'MagicPython', 'atom-django']
+      @provider.load()
+      @emitter.emit 'did-load-provider'
+      @disposables.dispose()
 
-  getProvider: -> provider
+  _loadKite: ->
+    firstInstall = localStorage.getItem('autocomplete-python.installed') == null
+    localStorage.setItem('autocomplete-python.installed', true)
+    longRunning = require('process').uptime() > 10
+    if firstInstall and longRunning
+      event = "installed"
+    else if firstInstall
+      event = "upgraded"
+    else
+      event = "restarted"
 
-  getHyperclickProvider: -> hyperclickProvider
+    {
+      AccountManager,
+      AtomHelper,
+      DecisionMaker,
+      Installation,
+      Installer,
+      Metrics,
+      StateController
+    } = require 'kite-installer'
+    AccountManager.initClient 'alpha.kite.com', -1, true
+    atom.views.addViewProvider Installation, (m) -> m.element
+    editorCfg =
+      UUID: localStorage.getItem('metrics.userId')
+      name: 'atom'
+    pluginCfg =
+      name: 'autocomplete-python'
+    dm = new DecisionMaker editorCfg, pluginCfg
+
+    checkKiteInstallation = () =>
+      if not atom.config.get 'autocomplete-python.useKite'
+        return
+      canInstall = StateController.canInstallKite()
+      throttle = dm.shouldOfferKite(event)
+      Promise.all([throttle, canInstall]).then((values) =>
+        atom.config.set 'autocomplete-python.useKite', true
+        variant = values[0]
+        Metrics.Tracker.name = "atom autocomplete-python install"
+        Metrics.Tracker.props = variant
+        Metrics.Tracker.props.lastEvent = event
+        title = "Choose a autocomplete-python engine"
+        @installation = new Installation variant, title
+        @installation.accountCreated(() =>
+          Metrics.Tracker.trackEvent "account created"
+          atom.config.set 'autocomplete-python.useKite', true
+        )
+        @installation.flowSkipped(() =>
+          Metrics.Tracker.trackEvent "flow aborted"
+          atom.config.set 'autocomplete-python.useKite', false
+        )
+        installer = new Installer()
+        installer.init @installation.flow
+        pane = atom.workspace.getActivePane()
+        @installation.flow.onSkipInstall () =>
+          atom.config.set 'autocomplete-python.useKite', false
+          Metrics.Tracker.trackEvent "skipped kite"
+          pane.destroyActiveItem()
+        pane.addItem @installation, index: 0
+        pane.activateItemAtIndex 0
+      , (err) =>
+        if err.type == 'denied'
+          atom.config.set 'autocomplete-python.useKite', false
+      ) if atom.config.get 'autocomplete-python.useKite'
+
+    checkKiteInstallation()
+
+    atom.config.onDidChange 'autocomplete-python.useKite', ({ newValue, oldValue }) ->
+      if newValue
+        checkKiteInstallation()
+        AtomHelper.enablePackage()
+      else
+        AtomHelper.disablePackage()
+
+  load: ->
+    @disposables = new CompositeDisposable
+    disposable = atom.workspace.observeTextEditors (editor) =>
+      @_handleGrammarChangeEvent(editor.getGrammar())
+      disposable = editor.onDidChangeGrammar (grammar) =>
+        @_handleGrammarChangeEvent(grammar)
+      @disposables.add disposable
+    @disposables.add disposable
+    @_loadKite()
+
+  activate: (state) ->
+    @emitter = new Emitter
+    @provider = require('./provider')
+    if typeof atom.packages.hasActivatedInitialPackages == 'function' and
+        atom.packages.hasActivatedInitialPackages()
+      @load()
+    else
+      disposable = atom.packages.onDidActivateInitialPackages =>
+        @load()
+        disposable.dispose()
+
+  deactivate: ->
+    @provider.dispose() if @provider
+    @installation.destroy() if @installation
+
+  getProvider: ->
+    return @provider
+
+  getHyperclickProvider: ->
+    return require('./hyperclick-provider')
 
   consumeSnippets: (snippetsManager) ->
-    provider.setSnippetsManager snippetsManager
+    disposable = @emitter.on 'did-load-provider', =>
+      @provider.setSnippetsManager snippetsManager
+      disposable.dispose()

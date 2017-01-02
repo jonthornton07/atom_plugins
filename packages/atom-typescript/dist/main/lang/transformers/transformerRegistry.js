@@ -1,3 +1,4 @@
+"use strict";
 var allTransformers = [];
 function add(transformer) {
     transformer.regex = (new RegExp("transform:" + transformer.name + "{[.\\s]*}transform:" + transformer.name, 'g'));
@@ -16,17 +17,6 @@ var transformFinderRegex = /transform:(.*){/g;
 var transformEndFinderRegexGenerator = function (name) { return new RegExp("}transform:" + name); };
 function getInitialTransformation(code) {
     var transforms = [];
-    var processedSrcUpto = 0;
-    var srcCode = code;
-    var destCode = '';
-    var destDelta = 0;
-    while (true) {
-        var remainingCode = code.substr(processedSrcUpto);
-        var matches = transformFinderRegex.exec(remainingCode);
-        if (!matches || !matches.length || matches.length < 2)
-            return { transforms: transforms };
-        var nextTransformName = matches.slice[1];
-    }
     return { transforms: transforms };
 }
 exports.getInitialTransformation = getInitialTransformation;
@@ -39,8 +29,9 @@ function transform(name, code) {
     return transformer.transform(code);
 }
 exports.transform = transform;
-var expand = require('glob-expand');
-var files = expand({ filter: 'isFile', cwd: __dirname }, [
-    "./implementations/*.js"
-]);
+var glob = require('glob');
+var files = glob.sync('./implementations/*.js', {
+    nodir: true,
+    cwd: __dirname
+});
 files = files.map(function (f) { return require(f); });

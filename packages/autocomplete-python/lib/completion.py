@@ -10,6 +10,7 @@ import jedi
 sys.path.pop(0)
 
 WORD_RE = re.compile(r'\w')
+ARGUMENT_RE = re.compile(r'[a-zA-Z0-9_=\*"\']+')
 
 
 class JediCompletion(object):
@@ -23,6 +24,8 @@ class JediCompletion(object):
     def __init__(self):
         self.default_sys_path = sys.path
         self._input = io.open(sys.stdin.fileno(), encoding='utf-8')
+        self.devnull = open(os.devnull, 'w')
+        self.stdout, self.stderr = sys.stdout, sys.stderr
 
     def _get_definition_type(self, definition):
         is_built_in = definition.in_builtin_module
@@ -60,11 +63,11 @@ class JediCompletion(object):
     def _generate_signature(self, completion):
         """Generate signature with function arguments.
         """
-        if not hasattr(completion, 'params'):
+        if completion.type in ['module'] or not hasattr(completion, 'params'):
             return ''
         return '%s(%s)' % (
             completion.name,
-            ', '.join(param.description for param in completion.params))
+            ', '.join(p.description for p in completion.params if p))
 
     def _get_call_signatures(self, script):
         """Extract call signatures from jedi.api.Script object in failsafe way.
@@ -154,6 +157,38 @@ class JediCompletion(object):
             _completions.append(_completion)
         return json.dumps({'id': identifier, 'results': _completions})
 
+    def _serialize_methods(self, script, identifier=None, prefix=''):
+        _methods = []
+        try:
+            completions = script.completions()
+        except KeyError:
+            return []
+
+        for completion in completions:
+            if completion.name == '__autocomplete_python':
+              instance = completion.parent().name
+              break
+        else:
+            instance = 'self.__class__'
+
+        for completion in completions:
+            params = []
+            if hasattr(completion, 'params'):
+                params = [p.description for p in completion.params
+                          if ARGUMENT_RE.match(p.description)]
+            if completion.parent().type == 'class':
+              _methods.append({
+                'parent': completion.parent().name,
+                'instance': instance,
+                'name': completion.name,
+                'params': params,
+                'moduleName': completion.module_name,
+                'fileName': completion.module_path,
+                'line': completion.line,
+                'column': completion.column,
+              })
+        return json.dumps({'id': identifier, 'results': _methods})
+
     def _serialize_arguments(self, script, identifier=None):
         """Serialize response to be read from Atom.
 
@@ -182,6 +217,16 @@ class JediCompletion(object):
         return json.dumps({'id': identifier, 'results': [],
                            'arguments': snippet})
 
+    def _top_definition(self, definition):
+        for d in definition.goto_assignments():
+            if d == definition:
+                continue
+            if d.type == 'import':
+                return self._top_definition(d)
+            else:
+                return d
+        return definition
+
     def _serialize_definitions(self, definitions, identifier=None):
         """Serialize response to be read from Atom.
 
@@ -192,23 +237,13 @@ class JediCompletion(object):
         Returns:
             Serialized string to send to Atom.
         """
-
-        def _top_definition(definition):
-          for d in definition.goto_assignments():
-            if d == definition:
-              continue
-            if d.type == 'import':
-              return _top_definition(d)
-            else:
-              return d
-          return definition
-
         _definitions = []
         for definition in definitions:
             if definition.module_path:
                 if definition.type == 'import':
-                    definition = _top_definition(definition)
-
+                    definition = self._top_definition(definition)
+                if not definition.module_path:
+                  continue
                 _definition = {
                     'text': definition.name,
                     'type': self._get_definition_type(definition),
@@ -217,6 +252,32 @@ class JediCompletion(object):
                     'column': definition.column
                 }
                 _definitions.append(_definition)
+        return json.dumps({'id': identifier, 'results': _definitions})
+
+    def _serialize_tooltip(self, definitions, identifier=None):
+        _definitions = []
+        for definition in definitions:
+            if definition.module_path:
+                if definition.type == 'import':
+                    definition = self._top_definition(definition)
+                if not definition.module_path:
+                  continue
+
+                description = definition.docstring()
+                if description is not None:
+                  description = description.strip()
+                if not description:
+                  description = self._additional_info(definition)
+                _definition = {
+                    'text': definition.name,
+                    'type': self._get_definition_type(definition),
+                    'fileName': definition.module_path,
+                    'description': description,
+                    'line': definition.line - 1,
+                    'column': definition.column
+                }
+                _definitions.append(_definition)
+                break
         return json.dumps({'id': identifier, 'results': _definitions})
 
     def _serialize_usages(self, usages, identifier=None):
@@ -265,6 +326,8 @@ class JediCompletion(object):
     def _process_request(self, request):
         """Accept serialized request from Atom and write response.
         """
+        if not request:
+          return
         request = self._deserialize(request)
 
         self._set_request_config(request.get('config', {}))
@@ -281,28 +344,42 @@ class JediCompletion(object):
         if lookup == 'definitions':
             return self._write_response(self._serialize_definitions(
                 script.goto_assignments(), request['id']))
+        if lookup == 'tooltip':
+            return self._write_response(self._serialize_tooltip(
+                script.goto_assignments(), request['id']))
         elif lookup == 'arguments':
             return self._write_response(self._serialize_arguments(
                 script, request['id']))
         elif lookup == 'usages':
             return self._write_response(self._serialize_usages(
                 script.usages(), request['id']))
+        elif lookup == 'methods':
+          return self._write_response(
+              self._serialize_methods(script, request['id'],
+                                      request.get('prefix', '')))
         else:
             return self._write_response(
                 self._serialize_completions(script, request['id'],
                                             request.get('prefix', '')))
 
     def _write_response(self, response):
+        sys.stdout = self.stdout
         sys.stdout.write(response + '\n')
         sys.stdout.flush()
 
     def watch(self):
         while True:
             try:
+                sys.stdout, sys.stderr = self.devnull, self.devnull
                 self._process_request(self._input.readline())
             except Exception:
+                sys.stderr = self.stderr
                 sys.stderr.write(traceback.format_exc() + '\n')
                 sys.stderr.flush()
 
 if __name__ == '__main__':
-    JediCompletion().watch()
+    if sys.argv[1:]:
+      for s in sys.argv[1:]:
+        JediCompletion()._process_request(s)
+    else:
+      JediCompletion().watch()

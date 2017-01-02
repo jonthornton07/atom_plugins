@@ -1,17 +1,19 @@
+"use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-var view = require('./view');
+var view = require("./view");
 var $ = view.$;
 var TooltipView = (function (_super) {
     __extends(TooltipView, _super);
     function TooltipView(rect) {
-        _super.call(this, rect);
-        this.rect = rect;
-        $(document.body).append(this.$);
-        this.updatePosition();
+        var _this = _super.call(this, rect) || this;
+        _this.rect = rect;
+        $(document.body).append(_this.$);
+        _this.updatePosition();
+        return _this;
     }
     TooltipView.content = function () {
         var _this = this;
@@ -42,5 +44,5 @@ var TooltipView = (function (_super) {
         this.$.css({ left: left, top: top, right: right });
     };
     return TooltipView;
-})(view.View);
+}(view.View));
 exports.TooltipView = TooltipView;

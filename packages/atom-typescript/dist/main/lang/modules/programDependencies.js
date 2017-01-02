@@ -1,3 +1,4 @@
+"use strict";
 var tsconfig_1 = require("../../tsconfig/tsconfig");
 var fsUtil_1 = require("../../utils/fsUtil");
 var path = require("path");
@@ -19,8 +20,8 @@ function getDependencies(projectFile, program) {
             }
             return file;
         });
-        for (var _b = 0; _b < targets.length; _b++) {
-            var target = targets[_b];
+        for (var _b = 0, targets_1 = targets; _b < targets_1.length; _b++) {
+            var target = targets_1[_b];
             var targetPath = fsUtil_1.consistentPath(path.relative(projectDir, fsUtil_1.consistentPath(target)));
             var sourcePath = fsUtil_1.consistentPath(path.relative(projectDir, filePath));
             links.push({
@@ -31,4 +32,5 @@ function getDependencies(projectFile, program) {
     }
     return links;
 }
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = getDependencies;

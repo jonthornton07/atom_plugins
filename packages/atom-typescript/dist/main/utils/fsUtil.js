@@ -1,6 +1,4 @@
-/**
- * Wraps fs and path into a nice "consistentPath" API
- */
+"use strict";
 function consistentPath(filePath) {
     return filePath.split('\\').join('/');
 }
@@ -9,7 +7,7 @@ var path = require("path");
 function resolve() {
     var args = [];
     for (var _i = 0; _i < arguments.length; _i++) {
-        args[_i - 0] = arguments[_i];
+        args[_i] = arguments[_i];
     }
     return consistentPath(path.resolve.apply(path, args));
 }
