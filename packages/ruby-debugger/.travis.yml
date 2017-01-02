@@ -1,0 +1,16 @@
+language: objective-c
+
+rvm:
+  - "2.2.0"
+ 
+notifications:
+  email:
+    on_success: change # never
+    on_failure: always # change
+
+install:
+  - gem update bundler --no-rdoc --no-ri
+  - bundle install
+
+script: 
+  - curl -s https://raw.githubusercontent.com/atom/ci/master/build-package.sh | sh

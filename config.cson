@@ -1,0 +1,24 @@
+"*":
+  "autocomplete-python": {}
+  core:
+    disabledPackages: [
+      "language-javascript-semantic"
+      "language-javascript-subtlegradient"
+      "jshint"
+    ]
+    telemetryConsent: "no"
+    themes: [
+      "atom-dark-ui"
+      "atom-dark-syntax"
+    ]
+  editor:
+    fontSize: 12
+    invisibles: {}
+    showIndentGuide: true
+  "exception-reporting":
+    userId: "1102ee21-5cdb-099d-2902-2d81deb682b8"
+  "markdown-preview": {}
+  "python-mrigor": {}
+  "python-tools": {}
+  welcome:
+    showOnStartup: false

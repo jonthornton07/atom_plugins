@@ -1,0 +1,72 @@
+{
+  "name": "ruby-debugger",
+  "main": "./lib/main",
+  "version": "0.0.1",
+  "description": "Provides a small Ruby-debugger in Atom",
+  "activationCommands": {
+    "atom-workspace": "ruby-debugger:toggle"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/johanlunds/atom-ruby-debugger"
+  },
+  "license": "MIT",
+  "engines": {
+    "atom": ">0.50.0"
+  },
+  "dependencies": {
+    "sax": "^0.6.1"
+  },
+  "readme": "# ruby-debugger package for Atom\n\n[![Build Status](https://travis-ci.org/johanlunds/atom-ruby-debugger.svg?branch=master)](https://travis-ci.org/johanlunds/atom-ruby-debugger)\n\nProvides a small Ruby-debugger in Atom. **THIS IS CURRENTLY WORK-IN-PROGRESS - IT'S NOT USEFUL YET**.\n\n*TODO: insert screenshot here*\n\n## Instructions\n\n1. Install the package: `apm install ruby-debugger`\n2. Install debugger gems with: `gem install ruby-debug-ide debase`\n3. Start the debugger with `rdebug-ide -- [SCRIPT] [ARGUMENTS...]`.\n   Example: `rdebug-ide -- bin/rails server`.\n   It's important that you use **the full path to a Ruby-script**. Otherwise you'll get an error.\n4. Connect to the debugger from Atom.\n\nCurrently only Ruby 2 is supported. It might work with 1.9 but it hasn't been tested.\n\n### Debugging with `rspec`, `rake` or `bundle`\n\nIf you want to start the debugger with `rspec`, `rake`, `bundle` or some other Ruby-binary that you don't know the path to:\n\n* ``rdebug-ide -- `which rspec` spec/lib/foo_spec.rb``\n* If you use Rbenv it generates shell wrapper scripts that makes the previous not work. Use `rbenv which` instead of `which`.\n\n## Configuration\n\nIf you run `rdebug-ide` with `--port PORT` you can tell Atom which port to connect to:\n\n```coffee\n\"ruby-debugger\":\n  port: 1234\n```\n",
+  "readmeFilename": "README.md",
+  "bugs": {
+    "url": "https://github.com/johanlunds/atom-ruby-debugger/issues"
+  },
+  "homepage": "https://github.com/johanlunds/atom-ruby-debugger",
+  "_id": "ruby-debugger@0.0.1",
+  "_shasum": "6a7b624f90bde8aac2c882fabfb353aeaf87e057",
+  "_resolved": "file:../d-115615-28081-1hcngiv/package.tgz",
+  "_from": "../d-115615-28081-1hcngiv/package.tgz",
+  "_atomModuleCache": {
+    "version": 1,
+    "dependencies": [
+      {
+        "name": "sax",
+        "version": "0.6.1",
+        "path": "node_modules/sax/lib/sax.js"
+      }
+    ],
+    "extensions": {
+      ".coffee": [
+        "lib/client.coffee",
+        "lib/main.coffee",
+        "lib/ruby-debugger.coffee",
+        "lib/view.coffee",
+        "lib/xml-parser.coffee"
+      ],
+      ".js": [
+        "node_modules/sax/examples/example.js",
+        "node_modules/sax/examples/get-products.js",
+        "node_modules/sax/examples/hello-world.js",
+        "node_modules/sax/examples/pretty-print.js",
+        "node_modules/sax/lib/sax.js"
+      ],
+      ".json": [
+        "node_modules/sax/package.json",
+        "package.json"
+      ]
+    },
+    "folders": [
+      {
+        "paths": [
+          "lib",
+          "",
+          "spec"
+        ],
+        "dependencies": {
+          "sax": "^0.6.1"
+        }
+      }
+    ]
+  }
+}

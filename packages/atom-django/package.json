@@ -1,0 +1,66 @@
+{
+  "_args": [
+    [
+      {
+        "raw": "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/d-11702-55792-uahidh/package.tgz",
+        "scope": null,
+        "escapedName": null,
+        "name": null,
+        "rawSpec": "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/d-11702-55792-uahidh/package.tgz",
+        "spec": "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/d-11702-55792-uahidh/package.tgz",
+        "type": "local"
+      },
+      "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/apm-install-dir-11702-55792-1q8yzyz"
+    ]
+  ],
+  "_from": "../d-11702-55792-uahidh/package.tgz",
+  "_id": "atom-django@0.3.2",
+  "_inCache": true,
+  "_installable": true,
+  "_location": "/atom-django",
+  "_phantomChildren": {},
+  "_requested": {
+    "raw": "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/d-11702-55792-uahidh/package.tgz",
+    "scope": null,
+    "escapedName": null,
+    "name": null,
+    "rawSpec": "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/d-11702-55792-uahidh/package.tgz",
+    "spec": "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/d-11702-55792-uahidh/package.tgz",
+    "type": "local"
+  },
+  "_requiredBy": [
+    "#USER"
+  ],
+  "_resolved": "file:../d-11702-55792-uahidh/package.tgz",
+  "_shasum": "61e3e99a6d69996b54448bae4b96054a4ed3f484",
+  "_shrinkwrap": null,
+  "_spec": "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/d-11702-55792-uahidh/package.tgz",
+  "_where": "/private/var/folders/k4/1mvnfcqs681_l8q7cq5vlyb40000gn/T/apm-install-dir-11702-55792-1q8yzyz",
+  "bugs": {
+    "url": "https://github.com/zacharytamas/atom-django/issues"
+  },
+  "dependencies": {},
+  "description": "Build Django apps faster with Atom.",
+  "devDependencies": {},
+  "engines": {
+    "atom": "*",
+    "node": "*"
+  },
+  "homepage": "https://github.com/zacharytamas/atom-django#readme",
+  "keywords": [
+    "django",
+    "Django",
+    "python django",
+    "python"
+  ],
+  "license": "MIT",
+  "name": "atom-django",
+  "optionalDependencies": {},
+  "readme": "# Django for Atom\n\n> Build Django apps faster with Atom.\n\n## Install\n\n```bash\n$ apm install atom-django\n```\n\nOr Settings ➔ Packages ➔ Search for `django`\n\n## Release Notes\n\n### 0.3.1\n\n* Fix a [syntax highlighting bug](https://github.com/zacharytamas/atom-django/issues/9).\n\n### 0.1.0\n\n* Initial build of Django for Atom.\n* At the moment it is merely a clone of the superb [Django TextMate bundle](https://github.com/textmate/python-django.tmbundle) but new content may be added in the future.\n\n## License\n\nMIT © [Zachary Jones](http://github.com/zacharytamas)\n",
+  "readmeFilename": "README.md",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zacharytamas/atom-django.git"
+  },
+  "version": "0.3.2"
+}
